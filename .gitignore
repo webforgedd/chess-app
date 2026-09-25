@@ -39,3 +39,10 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Claude
+.claude/
+CLAUDE.md
+
+# local config
+src/online/config.ts
