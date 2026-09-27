@@ -46,3 +46,6 @@ CLAUDE.md
 
 # local config
 src/online/config.ts
+
+assets_deliver/
+assets_new/
