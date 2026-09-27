@@ -1,14 +1,19 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Modal, Pressable, SafeAreaView, ScrollView, Text, View } from 'react-native';
+import { Alert, ImageBackground, Modal, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Chess, Square } from 'chess.js';
 import Board from '../components/Board';
 import Button from '../components/Button';
 import PlayerBar, { fmt } from '../components/PlayerBar';
 import Reactions from '../components/Reactions';
+import ScreenHeader from '../components/ScreenHeader';
 import VoiceMoveButton from '../voice/VoiceMoveButton';
+import ChatSheet from '../online/ChatSheet';
 import { radius, useTheme } from '../theme';
+import { useSettings } from '../settings';
 import { supabase } from '../online/supabase';
 import { Game, MoveRow, Profile } from '../online/types';
+
+const MARBLE_BG = require('../../assets/login-bg.jpg');
 
 const PROMO: { p: 'q' | 'r' | 'b' | 'n'; glyph: string; label: string }[] = [
   { p: 'q', glyph: '♛\uFE0E', label: 'Queen' }, { p: 'r', glyph: '♜\uFE0E', label: 'Rook' },
@@ -21,10 +26,12 @@ const REASONS: Record<string, string> = {
   repetition: 'Position repeated three times', 'fifty-move rule': '50 moves without a capture or pawn move', 'game over': 'Game over',
 };
 
-export default function OnlineGameScreen({ gameId, me, onExit, onReview }: {
-  gameId: string; me: string; onExit: () => void; onReview: (sans: string[]) => void;
+export default function OnlineGameScreen({ gameId, me, onExit, onReview, onRematch }: {
+  gameId: string; me: string; onExit: () => void; onReview: (sans: string[]) => void; onRematch: (newGameId: string) => void;
 }) {
   const t = useTheme();
+  const { s } = useSettings();
+  const royal = s.pieceStyle === 'royal';
   const [game, setGame] = useState<Game | null>(null);
   const [sans, setSans] = useState<string[]>([]);
   const [names, setNames] = useState<Record<string, Profile>>({});
@@ -34,8 +41,11 @@ export default function OnlineGameScreen({ gameId, me, onExit, onReview }: {
   const [targets, setTargets] = useState<Square[]>([]);
   const [msg, setMsg] = useState('');
   const [hideResult, setHideResult] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [unread, setUnread] = useState(0);
   const [promo, setPromo] = useState<{ from: Square; to: Square } | null>(null);
   const claimed = useRef(false);
+  const rematchNavigated = useRef(false);
 
   // Rebuild the position from the move list (keeps castling, repetition etc. correct)
   const chess = useMemo(() => { const c = new Chess(); sans.forEach((s) => c.move(s)); return c; }, [sans]);
@@ -43,7 +53,11 @@ export default function OnlineGameScreen({ gameId, me, onExit, onReview }: {
   const last = hist.length ? { from: hist[hist.length - 1].from, to: hist[hist.length - 1].to } : null;
 
   const applyMoves = useCallback((rows: MoveRow[]) => {
-    setSans(rows.sort((a, b) => a.ply - b.ply).map((r) => r.san));
+    const sorted = rows.sort((a, b) => a.ply - b.ply).map((r) => r.san);
+    // A background refresh can occasionally fetch a snapshot from just before our own
+    // move finished saving, which would otherwise flash the board back a move and then
+    // forward again once the next refresh catches up. Never move backwards.
+    setSans((prev) => (sorted.length >= prev.length ? sorted : prev));
   }, []);
 
   const refresh = useCallback(async () => {
@@ -91,6 +105,26 @@ export default function OnlineGameScreen({ gameId, me, onExit, onReview }: {
     supabase.rpc('claim_timeout', { p_game: gameId }).then(() => { refresh(); setTimeout(() => { claimed.current = false; }, 2000); });
   }, [now, game, skew]);
 
+  useEffect(() => {
+    if (game?.rematch_game_id && !rematchNavigated.current) {
+      rematchNavigated.current = true;
+      onRematch(game.rematch_game_id);
+    }
+  }, [game?.rematch_game_id]);
+
+  // Unread chat badge. This must run on every render (not after the "if (!game)"
+  // return below), or React sees a different number of hooks between renders.
+  useEffect(() => {
+    if (chatOpen) { setUnread(0); return; }
+    const ch = supabase
+      .channel('chat-badge-' + gameId)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: 'game_id=eq.' + gameId }, (payload: any) => {
+        if (payload.new.sender !== me) setUnread((n) => n + 1);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [gameId, chatOpen]);
+
   if (!game) {
     return <SafeAreaView style={{ flex: 1, backgroundColor: t.bg, justifyContent: 'center', alignItems: 'center' }}><Text style={{ color: t.text }}>Loading game...</Text></SafeAreaView>;
   }
@@ -105,19 +139,27 @@ export default function OnlineGameScreen({ gameId, me, onExit, onReview }: {
   const elapsed = active && game.move_count >= 1 && game.last_move_at ? Math.max(0, now + skew - Date.parse(game.last_move_at)) : 0;
   const wLeft = game.white_ms - (game.turn === 'w' ? elapsed : 0);
   const bLeft = game.black_ms - (game.turn === 'b' ? elapsed : 0);
+  // The move is checked again on the server (see supabase/functions/make-move) before
+  // it is written, using the game's real position -- not whatever this phone claims.
+  // We still validate locally first purely so a wrong tap gives instant feedback
+  // instead of waiting on the network.
   const commitMove = async (from: Square, to: Square, promotion: 'q' | 'r' | 'b' | 'n') => {
     const c = new Chess(chess.fen());
     let m;
     try { m = c.move({ from, to, promotion }); } catch { return; }
-    let result: string | null = null; let reason: string | null = null;
-    if (c.isCheckmate()) { result = myColor; reason = 'checkmate'; }
-    else if (c.isStalemate()) { result = 'd'; reason = 'stalemate'; }
-    else if (c.isInsufficientMaterial()) { result = 'd'; reason = 'insufficient material'; }
-    else if (c.isThreefoldRepetition()) { result = 'd'; reason = 'repetition'; }
-    else if (c.isDraw()) { result = 'd'; reason = 'fifty-move rule'; }
     setSans([...sans, m.san]); setSel(null); setTargets([]); setMsg('');
-    const { data, error } = await supabase.rpc('make_move', { p_game: gameId, p_san: m.san, p_fen: c.fen(), p_result: result, p_reason: reason });
-    if (error) { setMsg(error.message); refresh(); } else setGame(data as Game);
+    const { data, error } = await supabase.functions.invoke('make-move', {
+      body: { gameId, from, to, promotion },
+    });
+    if (error || data?.error) {
+      // The server disagreed (stale local state, or a tampered request) -- undo the
+      // optimistic move shown above and resync with the real game.
+      setSans(sans);
+      setMsg(data?.error ?? error?.message ?? 'Move rejected by the server');
+      refresh();
+    } else {
+      setGame(data.game as Game);
+    }
   };
 
   const press = async (sq: Square) => {
@@ -139,6 +181,12 @@ export default function OnlineGameScreen({ gameId, me, onExit, onReview }: {
   ]);
   const offerDraw = async () => { const { error } = await supabase.rpc('offer_draw', { p_game: gameId }); setMsg(error ? error.message : 'Draw offer sent.'); };
   const answer = async (accept: boolean) => { await supabase.rpc('respond_draw', { p_game: gameId, p_accept: accept }); refresh(); };
+  const rematch = async () => {
+    const { data, error } = await supabase.rpc('offer_rematch', { p_game: gameId });
+    if (error) { setMsg(error.message); return; }
+    setGame(data as Game);
+  };
+  const rematchLabel = game.rematch_offer === myColor ? 'Waiting for opponent...' : game.rematch_offer ? 'Accept rematch' : 'Rematch';
 
   const offerFromOpp = game.draw_offer && game.draw_offer !== myColor;
   const over = game.status === 'finished';
@@ -148,7 +196,13 @@ export default function OnlineGameScreen({ gameId, me, onExit, onReview }: {
   const oppLeft = myColor === 'w' ? bLeft : wLeft;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: t.bg }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: royal ? '#0D0D0D' : t.bg }}>
+      {royal && (
+        <ImageBackground source={MARBLE_BG} resizeMode="cover" style={StyleSheet.absoluteFillObject}>
+          <View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(10,8,5,0.4)' }} />
+        </ImageBackground>
+      )}
+      <ScreenHeader title={opp?.username ? `vs ${opp.username}` : 'Online Game'} onBack={onExit} />
       <ScrollView contentContainerStyle={{ padding: 16, gap: 12, alignItems: 'center', flexGrow: 1 }}>
         <PlayerBar name={opp?.username ?? 'Opponent'} sub={`Rating ${opp?.rating ?? '...'}`} time={fmt(oppLeft)} active={active && game.move_count >= 1 && game.turn !== myColor} />
         <Board board={chess.board()} selected={sel} targets={targets} lastMove={last} flipped={myColor === 'b'} onSquarePress={press} />
@@ -157,6 +211,10 @@ export default function OnlineGameScreen({ gameId, me, onExit, onReview }: {
         <View style={{ backgroundColor: t.surface, borderRadius: radius.card, padding: 12, width: '100%', gap: 4 }}>
           <Text style={{ color: t.text, fontSize: 15, fontWeight: '600' }}>{status}</Text>
           <Text style={{ color: t.textMuted, fontSize: 13 }} numberOfLines={1}>{msg || sans.slice(-6).join('  ') || 'No moves yet'}</Text>
+        </View>
+
+        <View style={{ width: '100%' }}>
+          <Button label={unread > 0 ? '💬 Chat (' + unread + ')' : '💬 Chat'} onPress={() => setChatOpen(true)} />
         </View>
 
         {active && game.move_count >= 0 && <Reactions gameId={gameId} mySide={myColor} />}
@@ -203,12 +261,15 @@ export default function OnlineGameScreen({ gameId, me, onExit, onReview }: {
           <View style={{ backgroundColor: t.surface, borderRadius: radius.card, padding: 20, width: '86%', gap: 12 }}>
             <Text style={{ color: t.text, fontSize: 24, fontWeight: '700' }}>{title}</Text>
             <Text style={{ color: t.textMuted, fontSize: 15 }}>{REASONS[game.reason ?? ''] ?? game.reason}</Text>
-            <Button primary label="Back to lobby" onPress={onExit} />
+            <Button primary label={rematchLabel} onPress={rematch} disabled={game.rematch_offer === myColor} />
+            <Button label="Back to lobby" onPress={onExit} />
             <Button label="Review game" onPress={() => onReview(sans)} disabled={sans.length < 2} />
             <Button label="View board" onPress={() => setHideResult(true)} />
           </View>
         </View>
       </Modal>
+
+      <ChatSheet visible={chatOpen} onClose={() => setChatOpen(false)} gameId={gameId} me={me} names={names} />
     </SafeAreaView>
   );
 }

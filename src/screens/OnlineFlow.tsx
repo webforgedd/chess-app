@@ -35,9 +35,9 @@ export default function OnlineFlow({ onExit, onReview }: { onExit: () => void; o
   if (loading) {
     return <SafeAreaView style={{ flex: 1, backgroundColor: t.bg, justifyContent: 'center', alignItems: 'center' }}><Text style={{ color: t.text }}>Loading...</Text></SafeAreaView>;
   }
-  if (!userId) return <AuthScreen onBack={onExit} />;
+  if (!userId) return <AuthScreen />;
   if (!profile) return <UsernameScreen onDone={reload} onSignOut={() => supabase.auth.signOut()} />;
-  if (gameId) return <OnlineGameScreen gameId={gameId} me={userId} onExit={() => { setGameId(null); reload(); }} onReview={onReview} />;
+  if (gameId) return <OnlineGameScreen key={gameId} gameId={gameId} me={userId} onExit={() => { setGameId(null); reload(); }} onReview={onReview} onRematch={setGameId} />;
   if (friends) return <FriendsScreen profile={profile} onGame={(id) => { setFriends(false); setGameId(id); }} onBack={() => setFriends(false)} />;
   return <OnlineLobbyScreen profile={profile} onGame={setGameId} onFriends={() => setFriends(true)} onBack={onExit} onSignOut={() => supabase.auth.signOut()} />;
 }

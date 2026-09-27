@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pressable, SafeAreaView, Text, View } from 'react-native';
+import ScreenHeader from '../components/ScreenHeader';
 import { boardThemes, radius, useTheme } from '../theme';
 import { PieceStyle, useSettings } from '../settings';
 import GlassPiece from '../components/GlassPiece';
@@ -22,14 +23,14 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: t.bg }}>
+      <ScreenHeader title="Settings" />
       <View style={{ padding: 16, gap: 12 }}>
-        <Text style={{ color: t.text, fontSize: 24, fontWeight: '700', marginTop: 16 }}>Settings</Text>
 
         {/* live preview */}
         <View style={{ flexDirection: 'row', height: 96, borderRadius: radius.card, overflow: 'hidden' }}>
           {(['k', 'q', 'n', 'p'] as const).map((p, i) => (
             <View key={p} style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: i % 2 ? c.dark : c.light }}>
-              {s.pieceStyle === 'glass'
+              {s.pieceStyle !== 'classic'
                 ? <GlassPiece type={p} color={i < 2 ? 'w' : 'b'} size={72} style={s.pieceStyle as 'glass' | 'royal'} />
                 : <Text style={{ fontSize: 56, color: i < 2 ? '#fff' : '#111' }}>{{ k: '♚', q: '♛', n: '♞', p: '♟' }[p]}{'\uFE0E'}</Text>}
             </View>

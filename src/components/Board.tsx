@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pressable, Text, View, useWindowDimensions } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { Chess, Square } from 'chess.js';
 import { boardThemes, radius, useTheme } from '../theme';
 import { useSettings } from '../settings';
@@ -10,6 +11,7 @@ const GLYPH: Record<string, string> = {
   k: '♚\uFE0E', q: '♛\uFE0E', r: '♜\uFE0E', b: '♝\uFE0E', n: '♞\uFE0E', p: '♟\uFE0E',
 };
 const FILES = 'abcdefgh';
+const GOLD = '#e9c46a';
 
 type Props = {
   board: ReturnType<Chess['board']>;
@@ -29,6 +31,7 @@ export default function Board({
   const t = useTheme();
   const { s } = useSettings();
   const colors = boardThemes[s.boardTheme];
+  const glass = s.pieceStyle === 'royal'; // Royal gets a frosted-glass board over whatever is behind it
   const { width } = useWindowDimensions();
   const size = Math.min(width - 32, 480);
   const cell = size / 8;
@@ -36,6 +39,7 @@ export default function Board({
 
   return (
     <View style={{ width: size, height: size, borderRadius: radius.board, overflow: 'hidden' }}>
+      {glass && <BlurView intensity={45} tint="dark" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />}
       {rows.map((row, ri) => {
         const cells = flipped ? [...row].reverse() : row;
         return (
@@ -48,8 +52,8 @@ export default function Board({
               const isSel = selected === sq || hintSquare === sq;
               const isLast = lastMove && (lastMove.from === sq || lastMove.to === sq);
               const isTarget = targets.includes(sq);
-              const label = { position: 'absolute' as const, fontSize: Math.max(9, cell * 0.2), fontWeight: '600' as const,
-                color: isLight ? colors.dark : colors.light };
+              const labelColor = glass ? (isLight ? '#3a2f18' : '#e9d9b0') : (isLight ? colors.dark : colors.light);
+              const label = { position: 'absolute' as const, fontSize: Math.max(9, cell * 0.2), fontWeight: '600' as const, color: labelColor };
               return (
                 <Pressable
                   key={sq}
@@ -57,10 +61,16 @@ export default function Board({
                   accessibilityLabel={`${sq}${piece ? ' ' + piece.type : ''}`}
                   style={{
                     width: cell, height: cell, alignItems: 'center', justifyContent: 'center',
-                    backgroundColor: isLight ? colors.light : colors.dark,
-                    borderWidth: checkSquare === sq ? 3 : 0, borderColor: t.text,
+                    backgroundColor: glass
+                      ? (isLight ? 'rgba(255,225,160,0.16)' : 'rgba(30,22,10,0.42)')
+                      : (isLight ? colors.light : colors.dark),
+                    borderWidth: glass ? 0.5 : checkSquare === sq ? 3 : 0,
+                    borderColor: glass ? 'rgba(210,175,110,0.35)' : t.text,
                   }}
                 >
+                  {checkSquare === sq && glass && (
+                    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderWidth: 3, borderColor: '#dc6464' }} />
+                  )}
                   {(isSel || isLast) && (
                     <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
                       backgroundColor: isSel ? t.selected : t.lastMove }} />
@@ -87,6 +97,7 @@ export default function Board({
           </View>
         );
       })}
+      {glass && <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderWidth: 2, borderColor: GOLD, borderRadius: radius.board }} />}
     </View>
   );
 }

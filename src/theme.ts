@@ -1,5 +1,3 @@
-import { useColorScheme } from 'react-native';
-
 export const palette = {
   dark: {
     bg: '#0D0D0D', surface: '#1A1A1A', surface2: '#262626',
@@ -26,5 +24,7 @@ export const radius = { board: 8, button: 12, card: 16 };
 export const space = { xs: 4, sm: 8, md: 16, lg: 24 };
 
 export function useTheme() {
-  return useColorScheme() === 'light' ? palette.light : palette.dark;
+  // Always the dark grey/black/gold palette, regardless of the phone's own light/dark
+  // setting -- the app's whole look (login, splash, board) is designed around this.
+  return palette.dark;
 }

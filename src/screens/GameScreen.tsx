@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
-import { Alert, Modal, Pressable, SafeAreaView, ScrollView, Text, View } from 'react-native';
+import { Alert, ImageBackground, Modal, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Board from '../components/Board';
 import Button from '../components/Button';
+import ScreenHeader from '../components/ScreenHeader';
 import { radius, useTheme } from '../theme';
+import { useSettings } from '../settings';
 import { Mode, PromoPiece, TimeControl, useChessGame } from '../game/useChessGame';
 import { useStockfish, SF_LEVELS } from '../engine/stockfish/useStockfish';
 import StockfishWebView from '../engine/stockfish/StockfishWebView';
 import VoiceMoveButton from '../voice/VoiceMoveButton';
+
+const MARBLE_BG = require('../../assets/login-bg.jpg');
 
 function fmt(ms: number) {
   const total = Math.max(0, ms);
@@ -47,6 +51,8 @@ export default function GameScreen({
   mode, level, tc, onExit, onReview,
 }: { mode: Mode; level: number; tc: TimeControl; onExit: () => void; onReview: (sans: string[]) => void }) {
   const t = useTheme();
+  const { s } = useSettings();
+  const royal = s.pieceStyle === 'royal';
   const sf = useStockfish(level);
   const g = useChessGame(mode, 'w', level, tc, mode === 'computer' ? sf : undefined);
   const live = !g.gameOver;
@@ -84,7 +90,13 @@ export default function GameScreen({
   for (let i = 0; i < g.moves.length; i += 2) pairs.push({ n: i / 2 + 1, w: g.moves[i], b: g.moves[i + 1] });
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: t.bg }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: royal ? '#0D0D0D' : t.bg }}>
+      {royal && (
+        <ImageBackground source={MARBLE_BG} resizeMode="cover" style={StyleSheet.absoluteFillObject}>
+          <View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(10,8,5,0.4)' }} />
+        </ImageBackground>
+      )}
+      <ScreenHeader title={mode === 'computer' ? 'Play the Computer' : 'Pass and Play'} onBack={onExit} />
       {mode === 'computer' && <StockfishWebView ref={sf.handle} onLine={sf.onLine} />}
       <ScrollView contentContainerStyle={{ padding: 16, gap: 12, alignItems: 'center', flexGrow: 1 }}>
         <PlayerBar

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { SafeAreaView, ScrollView, Text, View } from 'react-native';
+import ScreenHeader from '../components/ScreenHeader';
 import Button from '../components/Button';
 import { radius, useTheme } from '../theme';
 import { supabase } from '../online/supabase';
@@ -9,6 +10,8 @@ import { Field } from './AuthScreen';
 const TIMES = [
   { label: '3+2', m: 3, i: 2 }, { label: '5+0', m: 5, i: 0 }, { label: '10+0', m: 10, i: 0 }, { label: '15+10', m: 15, i: 10 },
 ];
+
+type FriendRequest = { id: string; from_user: string; to_user: string; status: string };
 
 export default function FriendsScreen({ profile, onGame, onBack }: {
   profile: Profile; onGame: (id: string) => void; onBack: () => void;
@@ -20,6 +23,11 @@ export default function FriendsScreen({ profile, onGame, onBack }: {
   const [incoming, setIncoming] = useState<(Challenge & { fromName: string })[]>([]);
   const [outgoing, setOutgoing] = useState<(Challenge & { toName: string })[]>([]);
 
+  const [friendName, setFriendName] = useState('');
+  const [friendMsg, setFriendMsg] = useState('');
+  const [friendCount, setFriendCount] = useState(0);
+  const [incomingFriend, setIncomingFriend] = useState<(FriendRequest & { fromName: string })[]>([]);
+
   const refresh = async () => {
     const { data: inc } = await supabase.from('challenges').select('*, from_profile:profiles!challenges_from_user_fkey(username)')
       .eq('to_user', profile.id).eq('status', 'pending');
@@ -29,12 +37,21 @@ export default function FriendsScreen({ profile, onGame, onBack }: {
     setOutgoing((out ?? []).map((r: any) => ({ ...r, toName: r.to_profile?.username ?? '?' })));
   };
 
+  const refreshFriends = async () => {
+    const { data: fc } = await supabase.rpc('friends_count', { p_user: profile.id });
+    setFriendCount(fc ?? 0);
+    const { data: fr } = await supabase.from('friend_requests').select('*, from_profile:profiles!friend_requests_from_user_fkey(username)')
+      .eq('to_user', profile.id).eq('status', 'pending');
+    setIncomingFriend((fr ?? []).map((r: any) => ({ ...r, fromName: r.from_profile?.username ?? '?' })));
+  };
+
   useEffect(() => {
-    refresh();
+    refresh(); refreshFriends();
     const ch = supabase.channel(`challenges-${profile.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'challenges' }, refresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'friend_requests' }, refreshFriends)
       .subscribe();
-    const poll = setInterval(refresh, 4000);
+    const poll = setInterval(() => { refresh(); refreshFriends(); }, 4000);
     return () => { clearInterval(poll); supabase.removeChannel(ch); };
   }, [profile.id]);
 
@@ -52,10 +69,40 @@ export default function FriendsScreen({ profile, onGame, onBack }: {
   const decline = async (id: string) => { await supabase.rpc('decline_challenge', { p_challenge: id }); refresh(); };
   const cancel = async (id: string) => { await supabase.rpc('cancel_challenge', { p_challenge: id }); refresh(); };
 
+  const sendFriend = async () => {
+    setFriendMsg('');
+    const { error } = await supabase.rpc('send_friend_request', { p_to_username: friendName.trim() });
+    if (error) setFriendMsg(error.message); else { setFriendMsg(`Friend request sent to ${friendName.trim()}.`); setFriendName(''); }
+  };
+  const acceptFriend = async (id: string) => { await supabase.rpc('respond_friend_request', { p_request: id, p_accept: true }); refreshFriends(); };
+  const declineFriend = async (id: string) => { await supabase.rpc('respond_friend_request', { p_request: id, p_accept: false }); refreshFriends(); };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: t.bg }}>
+      <ScreenHeader title="Friends" onBack={onBack} />
       <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
-        <Text style={{ color: t.text, fontSize: 24, fontWeight: '700', marginTop: 16 }}>Friends</Text>
+
+        <View style={{ backgroundColor: t.surface, borderRadius: radius.card, padding: 16, gap: 12 }}>
+          <Text style={{ color: t.text, fontSize: 15, fontWeight: '600' }}>{friendCount} friends</Text>
+          <Field placeholder="Add friend by username" value={friendName} onChangeText={setFriendName} autoCapitalize="none" autoCorrect={false} />
+          <Button primary label="Send friend request" onPress={sendFriend} disabled={!friendName.trim()} />
+          {!!friendMsg && <Text style={{ color: t.text, fontSize: 14 }}>{friendMsg}</Text>}
+        </View>
+
+        {incomingFriend.length > 0 && (
+          <View style={{ backgroundColor: t.surface, borderRadius: radius.card, padding: 16, gap: 10 }}>
+            <Text style={{ color: t.text, fontSize: 16, fontWeight: '600' }}>Friend requests</Text>
+            {incomingFriend.map((f) => (
+              <View key={f.id} style={{ gap: 6 }}>
+                <Text style={{ color: t.textMuted, fontSize: 14 }}>{f.fromName}</Text>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <Button flex primary label="Accept" onPress={() => acceptFriend(f.id)} />
+                  <Button flex label="Decline" onPress={() => declineFriend(f.id)} />
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
 
         {incoming.length > 0 && (
           <View style={{ backgroundColor: t.surface, borderRadius: radius.card, padding: 16, gap: 10 }}>

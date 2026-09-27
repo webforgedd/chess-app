@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { SafeAreaView, ScrollView, Text, View } from 'react-native';
+import ScreenHeader from '../components/ScreenHeader';
 import { Chess, Square } from 'chess.js';
 import Board from '../components/Board';
 import Button from '../components/Button';
@@ -67,10 +68,8 @@ function PuzzlePlay({ puzzle, onDone, onNext, onBack }: {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: t.bg }}>
+      <ScreenHeader title={`${puzzle.kind === 'mate1' ? 'Mate in 1' : 'Mate in 2'} · ${solver === 'w' ? 'White' : 'Black'} to move`} onBack={onBack} />
       <View style={{ padding: 16, gap: 12, alignItems: 'center' }}>
-        <Text style={{ color: t.text, fontSize: 20, fontWeight: '700', alignSelf: 'flex-start' }}>
-          {puzzle.kind === 'mate1' ? 'Mate in 1' : 'Mate in 2'} · {solver === 'w' ? 'White' : 'Black'} to move
-        </Text>
         <Board board={game.board()} selected={sel} targets={targets} lastMove={last} hintSquare={hint} onSquarePress={press} />
         <View style={{ backgroundColor: t.surface, borderRadius: radius.card, padding: 12, width: '100%' }}>
           <Text style={{ color: t.text, fontSize: 15, fontWeight: '600' }}>{msg}</Text>
@@ -120,8 +119,8 @@ export default function PuzzlesScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: t.bg }}>
+      <ScreenHeader title="Puzzles" />
       <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
-        <Text style={{ color: t.text, fontSize: 24, fontWeight: '700', marginTop: 16 }}>Puzzles</Text>
 
         <View style={{ backgroundColor: t.surface, borderRadius: radius.card, padding: 16, gap: 8 }}>
           <Text style={{ color: t.text, fontSize: 18, fontWeight: '600' }}>Daily puzzle</Text>

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, SafeAreaView, ScrollView, Text, View } from 'react-native';
+import ScreenHeader from '../components/ScreenHeader';
 import { Chess, Square } from 'chess.js';
 import Board from '../components/Board';
 import Button from '../components/Button';
@@ -47,12 +48,8 @@ export default function ReviewScreen({ sans, onClose }: { sans: string[]; onClos
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: t.bg }}>
+      <ScreenHeader title="Game Review" onBack={onClose} />
       <ScrollView contentContainerStyle={{ padding: 16, gap: 12, alignItems: 'center' }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-          <Text style={{ color: t.text, fontSize: 24, fontWeight: '700' }}>Game review</Text>
-          <View style={{ width: 90 }}><Button label="Close" onPress={onClose} /></View>
-        </View>
-
         <Board board={positions.boards[ply]} lastMove={positions.last[ply]} />
 
         <View style={{ backgroundColor: t.surface, borderRadius: radius.card, padding: 12, width: '100%', gap: 4 }}>

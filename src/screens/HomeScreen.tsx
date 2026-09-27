@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Pressable, SafeAreaView, ScrollView, Text, View } from 'react-native';
 import Button from '../components/Button';
+import ScreenHeader from '../components/ScreenHeader';
 import { radius, useTheme } from '../theme';
 import { Mode, TimeControl } from '../game/useChessGame';
 
@@ -22,9 +23,9 @@ export default function HomeScreen({ onPlay, onOnline }: { onPlay: (m: Mode, lev
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: t.bg }}>
+      <ScreenHeader title="Chess" />
       <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
-        <Text style={{ color: t.text, fontSize: 24, fontWeight: '700', marginTop: 16 }}>Chess</Text>
-        <Text style={{ color: t.textMuted, fontSize: 15 }}>Pick how you want to play.</Text>
+        <Text style={{ color: t.textMuted, fontSize: 15, marginTop: 4 }}>Pick how you want to play.</Text>
 
         <View style={{ backgroundColor: t.surface, borderRadius: radius.card, padding: 16, gap: 12 }}>
           <Text style={{ color: t.text, fontSize: 15, fontWeight: '600' }}>Time (minutes + increment seconds)</Text>

@@ -45,9 +45,7 @@ export const GLASS: Record<'w' | 'b', GlassStyle> = {
 };
 
 // Small details drawn on top of the glass (eye of the knight)
-export const DETAILS: Record<string, { cx: number; cy: number; r: number }[]> = {
-  n: [{ cx: 57, cy: 33, r: 2.8 }],
-};
+export const DETAILS: Record<string, { cx: number; cy: number; r: number }[]> = {};
 
 // Royal (ornate gold / dark bronze) style, for a luxury carved-chess-set look.
 export const ROYAL: Record<'w' | 'b', GlassStyle> = {
@@ -94,7 +92,6 @@ export const ORNAMENTS: Record<string, { cx: number; cy: number; r: number }[]> 
   k: [{ cx: 50, cy: 17, r: 2.6 }],
   q: [{ cx: 50, cy: 20, r: 2.2 }],
   b: [{ cx: 50, cy: 14, r: 2 }],
-  n: [{ cx: 57, cy: 33, r: 2.2 }],
   r: [{ cx: 50, cy: 20, r: 1.8 }],
   p: [{ cx: 50, cy: 29, r: 1.8 }],
 };

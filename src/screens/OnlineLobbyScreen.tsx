@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, SafeAreaView, Text, View } from 'react-native';
+import ScreenHeader from '../components/ScreenHeader';
 import Button from '../components/Button';
 import { radius, useTheme } from '../theme';
 import { supabase } from '../online/supabase';
@@ -58,13 +59,11 @@ export default function OnlineLobbyScreen({ profile, onGame, onFriends, onBack, 
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: t.bg }}>
+      <ScreenHeader title="Play Online" onBack={onBack} right={<Pressable onPress={onSignOut}><Text style={{ color: 'rgba(230,222,205,0.9)', fontSize: 12 }}>Sign out</Text></Pressable>} />
       <View style={{ padding: 16, gap: 12 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
-          <View>
-            <Text style={{ color: t.text, fontSize: 24, fontWeight: '700' }}>{profile.username}</Text>
-            <Text style={{ color: t.textMuted, fontSize: 14 }}>Rating {profile.rating}</Text>
-          </View>
-          <View style={{ width: 100 }}><Button label="Sign out" onPress={onSignOut} /></View>
+        <View style={{ marginTop: 4 }}>
+          <Text style={{ color: t.text, fontSize: 20, fontWeight: '700' }}>{profile.username}</Text>
+          <Text style={{ color: t.textMuted, fontSize: 14 }}>Rating {profile.rating}</Text>
         </View>
 
         {resume && !searching && (

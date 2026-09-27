@@ -1,10 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
 import { Move } from 'chess.js';
-import {
-  ExpoSpeechRecognitionModule,
-  useSpeechRecognitionEvent,
-} from 'expo-speech-recognition';
+import { ExpoSpeechRecognitionModule } from 'expo-speech-recognition';
 import { radius, useTheme } from '../theme';
 import Button from '../components/Button';
 import { parseSpokenMove } from './parseSpokenMove';
@@ -22,33 +19,44 @@ export default function VoiceMoveButton({ legalMoves, onMove, disabled }: Props)
   const [candidates, setCandidates] = useState<Move[] | null>(null);
   const [notFound, setNotFound] = useState<string | null>(null);
 
-  // Native speech events can arrive while React is still in the middle of rendering
-  // another component (e.g. the board updating from the previous move), which React
-  // does not allow a state update to interrupt. `setTimeout(..., 0)` pushes the actual
-  // state changes to the next tick, after the current render has fully finished.
-  useSpeechRecognitionEvent('start', () => setTimeout(() => setListening(true), 0));
-  useSpeechRecognitionEvent('result', (e: any) => {
-    const text = e.results?.[0]?.transcript ?? '';
-    setTimeout(() => setTranscript(text), 0);
-  });
-  useSpeechRecognitionEvent('error', () => setTimeout(() => setListening(false), 0));
+  // Subscribed by hand (once, in an effect) instead of via the library's convenience
+  // hook. A community hook that re-subscribes on every render, or that replays a
+  // buffered event synchronously the moment it is called, can end up updating this
+  // component's state WHILE a different component (the game screen) is still in the
+  // middle of rendering -- which React does not allow. Subscribing here, inside
+  // useEffect with an empty dependency list, guarantees it only ever happens after
+  // React has fully finished rendering everything for this pass.
+  useEffect(() => {
+    const finish = (text: string) => {
+      if (!text) return;
+      const r = parseSpokenMove(text, legalMovesRef.current);
+      if (r.kind === 'match') { onMoveRef.current(r.move.from, r.move.to, r.move.promotion as any); setNotFound(null); }
+      else if (r.kind === 'ambiguous') setCandidates(r.candidates);
+      else setNotFound(text);
+    };
+    let lastTranscript = '';
+    const subs = [
+      ExpoSpeechRecognitionModule.addListener('start', () => setListening(true)),
+      ExpoSpeechRecognitionModule.addListener('result', (e: any) => {
+        lastTranscript = e.results?.[0]?.transcript ?? '';
+        setTranscript(lastTranscript);
+      }),
+      ExpoSpeechRecognitionModule.addListener('error', () => setListening(false)),
+      ExpoSpeechRecognitionModule.addListener('end', () => {
+        setListening(false);
+        finish(lastTranscript);
+      }),
+    ];
+    return () => subs.forEach((s) => s.remove());
+  }, []);
 
-  const handleFinalResult = (text: string) => {
-    if (!text) return;
-    const r = parseSpokenMove(text, legalMoves);
-    if (r.kind === 'match') { onMove(r.move.from, r.move.to, r.move.promotion as any); setNotFound(null); }
-    else if (r.kind === 'ambiguous') setCandidates(r.candidates);
-    else setNotFound(text);
-  };
-
-  // The native module reports the end of speech via the "end" event; use whatever the
-  // last transcript was at that point.
-  useSpeechRecognitionEvent('end', () => {
-    setTimeout(() => {
-      setListening(false);
-      setTranscript((current) => { handleFinalResult(current); return current; });
-    }, 0);
-  });
+  // Event callbacks above are set up once and must always see the LATEST props/state,
+  // not whatever they were on the render that created the subscription -- refs solve
+  // that without re-subscribing.
+  const legalMovesRef = React.useRef(legalMoves);
+  legalMovesRef.current = legalMoves;
+  const onMoveRef = React.useRef(onMove);
+  onMoveRef.current = onMove;
 
   const start = async () => {
     setNotFound(null);

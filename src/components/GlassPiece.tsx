@@ -8,6 +8,7 @@ const stops = (a: GStop[]) => a.map((s, i) => <Stop key={i} offset={s.o} stopCol
 function Shape({ p }: { p: Part }) {
   if (p.k === 'p') return <Path d={p.d} />;
   if (p.k === 'c') return <Circle cx={p.cx} cy={p.cy} r={p.r} />;
+  if (p.k === 'raw') return <Path d={p.d} transform={p.transform} fillRule="evenodd" />;
   return <Rect x={p.x} y={p.y} width={p.w} height={p.h} rx={p.rx} />;
 }
 
