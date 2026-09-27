@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Modal, Pressable, RefreshControl, SafeAreaView, ScrollView, Text, TextInput, View } from 'react-native';
-import ScreenHeader from '../components/ScreenHeader';
+import { useFonts, CinzelDecorative_900Black } from '@expo-google-fonts/cinzel-decorative';
 import * as ImagePicker from 'expo-image-picker';
 import { radius, useTheme } from '../theme';
-import Button from '../components/Button';
 import Sparkline from '../components/Sparkline';
 import { supabase, isConfigured } from '../online/supabase';
 import { useSession } from '../online/useSession';
@@ -13,6 +12,10 @@ import AuthScreen from './AuthScreen';
 import UsernameScreen from './UsernameScreen';
 
 const KING_AVATAR = require('../../assets/intro-king.jpg');
+
+const GOLD = '#e9c46a';
+const GOLD_LIGHT = '#f7e7bd';
+const GOLD_DIM = 'rgba(210,175,110,0.45)';
 
 type Fmt = 'bullet' | 'blitz' | 'rapid';
 const FORMAT_LABEL: Record<Fmt, string> = { bullet: 'Bullet', blitz: 'Blitz', rapid: 'Rapid' };
@@ -27,14 +30,69 @@ function fmtDate(iso: string) {
   return d.toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
 }
 
+// Gold Cinzel hero title -- same treatment as the Home screen's "CHESSMATE" heading,
+// reused here for the Profile screen's "PROFILE" heading.
+function ProfileHeroTitle() {
+  const [fontsLoaded] = useFonts({ CinzelDecorative_900Black });
+  return (
+    <View style={{ alignItems: 'center', marginTop: 12, marginBottom: 4 }}>
+      <Text style={{
+        color: GOLD_LIGHT, fontSize: 35, letterSpacing: 3,
+        fontFamily: fontsLoaded ? 'CinzelDecorative_900Black' : undefined,
+        fontWeight: fontsLoaded ? undefined : '800',
+        textShadowColor: 'rgba(233,196,106,0.5)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 18,
+      }}>
+        PROFILE
+      </Text>
+      <View style={{ width: 120, height: 1, backgroundColor: GOLD, opacity: 0.6, marginTop: 8 }} />
+    </View>
+  );
+}
+
+// A gold-glass card: dark surface, subtle gold border, a thin bright rim-light along
+// the top edge -- same "premium" treatment used on the Home screen's cards.
+function GoldCard({ style, children }: { style?: any; children: React.ReactNode }) {
+  return (
+    <View style={[{
+      backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: radius.card, padding: 16,
+      borderWidth: 1, borderColor: GOLD_DIM,
+    }, style]}>
+      <View style={{ position: 'absolute', top: 0, left: 16, right: 16, height: 1, backgroundColor: 'rgba(255,240,210,0.35)' }} />
+      {children}
+    </View>
+  );
+}
+
+function GoldButton({ label, onPress, disabled }: { label: string; onPress: () => void; disabled?: boolean }) {
+  return (
+    <Pressable onPress={onPress} disabled={disabled} style={({ pressed }) => ({
+      height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center',
+      backgroundColor: GOLD, opacity: disabled ? 0.4 : pressed ? 0.85 : 1,
+    })}>
+      <Text style={{ color: '#1a1408', fontSize: 16, fontWeight: '700' }}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function GhostGoldButton({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => ({
+      height: 50, borderRadius: 16, alignItems: 'center', justifyContent: 'center',
+      backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(210,175,110,0.45)', opacity: pressed ? 0.7 : 1,
+    })}>
+      <Text style={{ color: GOLD_LIGHT, fontSize: 15, fontWeight: '700' }}>{label}</Text>
+    </Pressable>
+  );
+}
+
 function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
   const t = useTheme();
   return (
-    <View style={{ flex: 1, backgroundColor: t.surface, borderRadius: radius.card, padding: 16 }}>
-      <Text style={{ color: t.textMuted, fontSize: 12 }}>{label}</Text>
+    <GoldCard style={{ flex: 1 }}>
+      <Text style={{ color: 'rgba(230,222,205,0.75)', fontSize: 12 }}>{label}</Text>
       <Text style={{ color: t.text, fontSize: 22, fontWeight: '700', marginTop: 4 }}>{value}</Text>
-      {!!sub && <Text style={{ color: t.textMuted, fontSize: 11, marginTop: 2 }}>{sub}</Text>}
-    </View>
+      {!!sub && <Text style={{ color: 'rgba(230,222,205,0.75)', fontSize: 11, marginTop: 2 }}>{sub}</Text>}
+    </GoldCard>
   );
 }
 
@@ -207,15 +265,15 @@ function ProfileInner({ userId, onOpenSettings, onOpenFriends, focused }: { user
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: t.bg }}>
-      <ScreenHeader title="Profile" />
+      <ProfileHeroTitle />
       <ScrollView
         style={{ flex: 1, backgroundColor: t.bg }}
         contentContainerStyle={{ padding: 16, gap: 14 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={t.text} />}
       >
       {/* Header */}
-      <View style={{ backgroundColor: t.surface, borderRadius: radius.card, padding: 16, flexDirection: 'row', gap: 14, alignItems: 'center' }}>
-        <Pressable onPress={pickAvatar} style={{ width: 72, height: 72, borderRadius: 36, overflow: 'hidden', borderWidth: 2, borderColor: '#e9c46a' }}>
+      <GoldCard style={{ flexDirection: 'row', gap: 14, alignItems: 'center' }}>
+        <Pressable onPress={pickAvatar} style={{ width: 72, height: 72, borderRadius: 36, overflow: 'hidden', borderWidth: 2, borderColor: GOLD }}>
           <Image source={profile?.avatar_url ? { uri: profile.avatar_url } : KING_AVATAR} style={{ width: 72, height: 72 }} resizeMode="cover" />
           <View style={{ position: 'absolute', right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0,0,0,0.55)', paddingVertical: 3, alignItems: 'center' }}>
             {uploading ? <ActivityIndicator size="small" color="#fff" /> : <Text style={{ color: '#fff', fontSize: 9, fontWeight: '700' }}>EDIT</Text>}
@@ -224,17 +282,17 @@ function ProfileInner({ userId, onOpenSettings, onOpenFriends, focused }: { user
         <View style={{ flex: 1 }}>
           <Pressable onPress={openEditName} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Text style={{ color: t.text, fontSize: 18, fontWeight: '700' }}>{profile?.username}</Text>
-            <Text style={{ color: t.textMuted, fontSize: 12 }}>✎</Text>
+            <Text style={{ color: 'rgba(230,222,205,0.75)', fontSize: 12 }}>✎</Text>
           </Pressable>
-          {!!profile?.country && <Text style={{ color: t.textMuted, fontSize: 12, marginTop: 2 }}>{profile.country}</Text>}
-          <Text style={{ color: t.textMuted, fontSize: 12, marginTop: 2 }}>
+          {!!profile?.country && <Text style={{ color: 'rgba(230,222,205,0.75)', fontSize: 12, marginTop: 2 }}>{profile.country}</Text>}
+          <Text style={{ color: 'rgba(230,222,205,0.75)', fontSize: 12, marginTop: 2 }}>
             Member since {profile ? fmtDate(profile.created_at) : ''}
           </Text>
           {!!profile?.avatar_url && (
-            <Pressable onPress={removePhoto}><Text style={{ color: t.textMuted, fontSize: 11, marginTop: 4, textDecorationLine: 'underline' }}>Remove photo</Text></Pressable>
+            <Pressable onPress={removePhoto}><Text style={{ color: 'rgba(230,222,205,0.75)', fontSize: 11, marginTop: 4, textDecorationLine: 'underline' }}>Remove photo</Text></Pressable>
           )}
         </View>
-      </View>
+      </GoldCard>
 
       <Modal visible={editingName} transparent animationType="fade" onRequestClose={() => setEditingName(false)}>
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center' }}>
@@ -246,8 +304,8 @@ function ProfileInner({ userId, onOpenSettings, onOpenFriends, focused }: { user
               style={{ backgroundColor: t.surface2, color: t.text, borderRadius: 12, height: 48, paddingHorizontal: 14, fontSize: 16 }}
             />
             {!!nameMsg && <Text style={{ color: t.text, fontSize: 13 }}>{nameMsg}</Text>}
-            <Button primary label={savingName ? 'Saving...' : 'Save'} onPress={saveName} disabled={savingName || nameInput.trim().length < 3} />
-            <Button label="Cancel" onPress={() => setEditingName(false)} />
+            <GoldButton label={savingName ? 'Saving...' : 'Save'} onPress={saveName} disabled={savingName || nameInput.trim().length < 3} />
+            <GhostGoldButton label="Cancel" onPress={() => setEditingName(false)} />
           </View>
         </View>
       </Modal>
@@ -264,14 +322,14 @@ function ProfileInner({ userId, onOpenSettings, onOpenFriends, focused }: { user
       </View>
 
       {/* Trend */}
-      <View style={{ backgroundColor: t.surface, borderRadius: radius.card, padding: 16 }}>
+      <GoldCard>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
           <Text style={{ color: t.text, fontSize: 14, fontWeight: '700' }}>Rating Trend (30 days)</Text>
           <View style={{ flexDirection: 'row', gap: 6 }}>
             {(['bullet', 'blitz', 'rapid'] as Fmt[]).map((f) => (
               <Pressable key={f} onPress={() => setTrendFmt(f)}
-                style={{ paddingHorizontal: 10, height: 26, borderRadius: 13, justifyContent: 'center', backgroundColor: trendFmt === f ? t.text : t.surface2 }}>
-                <Text style={{ fontSize: 11, fontWeight: '700', color: trendFmt === f ? t.bg : t.textMuted }}>{FORMAT_LABEL[f]}</Text>
+                style={{ paddingHorizontal: 10, height: 26, borderRadius: 13, justifyContent: 'center', backgroundColor: trendFmt === f ? GOLD : 'rgba(255,255,255,0.06)' }}>
+                <Text style={{ fontSize: 11, fontWeight: '700', color: trendFmt === f ? '#1a1408' : 'rgba(230,222,205,0.75)' }}>{FORMAT_LABEL[f]}</Text>
               </Pressable>
             ))}
           </View>
@@ -279,22 +337,22 @@ function ProfileInner({ userId, onOpenSettings, onOpenFriends, focused }: { user
         {trendFmt && trendData[trendFmt].length >= 2 ? (
           <Sparkline values={trendData[trendFmt]} width={310} height={90} />
         ) : (
-          <Text style={{ color: t.textMuted, fontSize: 13 }}>Play a few rated {trendFmt ? FORMAT_LABEL[trendFmt] : ''} games to see your trend here.</Text>
+          <Text style={{ color: 'rgba(230,222,205,0.75)', fontSize: 13 }}>Play a few rated {trendFmt ? FORMAT_LABEL[trendFmt] : ''} games to see your trend here.</Text>
         )}
-      </View>
+      </GoldCard>
 
       {/* Win/Loss/Draw */}
-      <View style={{ backgroundColor: t.surface, borderRadius: radius.card, padding: 16 }}>
+      <GoldCard>
         <Text style={{ color: t.text, fontSize: 14, fontWeight: '700', marginBottom: 10 }}>Win / Loss / Draw (last {games.length})</Text>
-        <View style={{ flexDirection: 'row', height: 14, borderRadius: 7, overflow: 'hidden', backgroundColor: t.surface2 }}>
+        <View style={{ flexDirection: 'row', height: 14, borderRadius: 7, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.06)' }}>
           <View style={{ flex: wins, backgroundColor: '#6ec878' }} />
           <View style={{ flex: losses, backgroundColor: '#dc6464' }} />
-          <View style={{ flex: draws || 0.0001, backgroundColor: t.textMuted }} />
+          <View style={{ flex: draws || 0.0001, backgroundColor: 'rgba(230,222,205,0.75)' }} />
         </View>
-        <Text style={{ color: t.textMuted, fontSize: 12, marginTop: 8 }}>
+        <Text style={{ color: 'rgba(230,222,205,0.75)', fontSize: 12, marginTop: 8 }}>
           {Math.round((wins / total) * 100)}% Wins · {Math.round((losses / total) * 100)}% Losses · {Math.round((draws / total) * 100)}% Draws
         </Text>
-      </View>
+      </GoldCard>
 
       {/* Recent matches */}
       <Text style={{ color: t.text, fontSize: 16, fontWeight: '700' }}>Recent Matches</Text>
@@ -306,16 +364,16 @@ function ProfileInner({ userId, onOpenSettings, onOpenFriends, focused }: { user
         const drew = g.result === 'd';
         const change = mine ? g.white_rating_change : g.black_rating_change;
         return (
-          <View key={g.id} style={{ backgroundColor: t.surface, borderRadius: radius.card, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <View style={{ width: 26, height: 26, borderRadius: 13, borderWidth: 2, borderColor: drew ? t.textMuted : won ? '#6ec878' : '#dc6464', alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ color: drew ? t.textMuted : won ? '#6ec878' : '#dc6464', fontWeight: '700' }}>{drew ? '=' : won ? '✓' : '✗'}</Text>
+          <View key={g.id} style={{ backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: radius.card, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: GOLD_DIM }}>
+            <View style={{ width: 26, height: 26, borderRadius: 13, borderWidth: 2, borderColor: drew ? 'rgba(230,222,205,0.75)' : won ? '#6ec878' : '#dc6464', alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ color: drew ? 'rgba(230,222,205,0.75)' : won ? '#6ec878' : '#dc6464', fontWeight: '700' }}>{drew ? '=' : won ? '✓' : '✗'}</Text>
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{ color: t.text, fontSize: 14, fontWeight: '600' }}>{names[oppId] ?? 'Opponent'}</Text>
-              <Text style={{ color: t.textMuted, fontSize: 11 }}>{g.move_count} moves</Text>
+              <Text style={{ color: 'rgba(230,222,205,0.75)', fontSize: 11 }}>{g.move_count} moves</Text>
             </View>
             {change != null && (
-              <Text style={{ color: change > 0 ? '#6ec878' : change < 0 ? '#dc6464' : t.textMuted, fontWeight: '700' }}>
+              <Text style={{ color: change > 0 ? '#6ec878' : change < 0 ? '#dc6464' : 'rgba(230,222,205,0.75)', fontWeight: '700' }}>
                 {change > 0 ? '+' : ''}{change}
               </Text>
             )}
@@ -327,45 +385,45 @@ function ProfileInner({ userId, onOpenSettings, onOpenFriends, focused }: { user
       <Text style={{ color: t.text, fontSize: 16, fontWeight: '700' }}>Trophies & Badges</Text>
       <View style={{ flexDirection: 'row', gap: 10 }}>
         {streak >= 3 && (
-          <View style={{ flex: 1, backgroundColor: t.surface, borderRadius: 16, padding: 12, alignItems: 'center' }}>
-            <Text style={{ fontSize: 22 }}>★</Text>
-            <Text style={{ color: t.textMuted, fontSize: 10, textAlign: 'center', marginTop: 4 }}>{streak}-Win{'\n'}Streak</Text>
+          <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 16, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: GOLD_DIM }}>
+            <Text style={{ fontSize: 22, color: GOLD }}>★</Text>
+            <Text style={{ color: 'rgba(230,222,205,0.75)', fontSize: 10, textAlign: 'center', marginTop: 4 }}>{streak}-Win{'\n'}Streak</Text>
           </View>
         )}
         {knightMate && (
-          <View style={{ flex: 1, backgroundColor: t.surface, borderRadius: 16, padding: 12, alignItems: 'center' }}>
-            <Text style={{ fontSize: 22 }}>★</Text>
-            <Text style={{ color: t.textMuted, fontSize: 10, textAlign: 'center', marginTop: 4 }}>Knight{'\n'}Mate</Text>
+          <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 16, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: GOLD_DIM }}>
+            <Text style={{ fontSize: 22, color: GOLD }}>★</Text>
+            <Text style={{ color: 'rgba(230,222,205,0.75)', fontSize: 10, textAlign: 'center', marginTop: 4 }}>Knight{'\n'}Mate</Text>
           </View>
         )}
         {puzzlesSolved >= 10 && (
-          <View style={{ flex: 1, backgroundColor: t.surface, borderRadius: 16, padding: 12, alignItems: 'center' }}>
-            <Text style={{ fontSize: 22 }}>★</Text>
-            <Text style={{ color: t.textMuted, fontSize: 10, textAlign: 'center', marginTop: 4 }}>Puzzle{'\n'}Solver</Text>
+          <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 16, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: GOLD_DIM }}>
+            <Text style={{ fontSize: 22, color: GOLD }}>★</Text>
+            <Text style={{ color: 'rgba(230,222,205,0.75)', fontSize: 10, textAlign: 'center', marginTop: 4 }}>Puzzle{'\n'}Solver</Text>
           </View>
         )}
         {streak < 3 && !knightMate && puzzlesSolved < 10 && (
-          <Text style={{ color: t.textMuted, fontSize: 13 }}>Play games and solve puzzles to earn badges.</Text>
+          <Text style={{ color: 'rgba(230,222,205,0.75)', fontSize: 13 }}>Play games and solve puzzles to earn badges.</Text>
         )}
       </View>
 
       {/* Favorite opening */}
       {(opening.white || opening.black) && (
-        <View style={{ backgroundColor: t.surface, borderRadius: radius.card, padding: 16 }}>
-          <Text style={{ color: t.textMuted, fontSize: 12, marginBottom: 6 }}>Favorite Opening</Text>
+        <GoldCard>
+          <Text style={{ color: 'rgba(230,222,205,0.75)', fontSize: 12, marginBottom: 6 }}>Favorite Opening</Text>
           {!!opening.white && <Text style={{ color: t.text, fontSize: 13, fontWeight: '600' }}>White: {opening.white}</Text>}
           {!!opening.black && <Text style={{ color: t.text, fontSize: 13, fontWeight: '600', marginTop: 2 }}>Black: {opening.black}</Text>}
-        </View>
+        </GoldCard>
       )}
 
       {/* Friends */}
-      <Pressable onPress={onOpenFriends} style={{ backgroundColor: t.surface, borderRadius: radius.card, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable onPress={onOpenFriends} style={{ backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: radius.card, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: GOLD_DIM }}>
         <Text style={{ color: t.text, fontSize: 15, fontWeight: '700' }}>{friends} Friends</Text>
-        <Text style={{ color: t.textMuted, fontSize: 16 }}>{'>'}</Text>
+        <Text style={{ color: GOLD_LIGHT, fontSize: 16 }}>{'>'}</Text>
       </Pressable>
 
       {/* Settings shortcut */}
-      <Button label="Settings" onPress={onOpenSettings} />
+      <GoldButton label="Settings" onPress={onOpenSettings} />
     </ScrollView>
     </SafeAreaView>
   );

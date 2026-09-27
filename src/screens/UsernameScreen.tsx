@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { useFonts, CinzelDecorative_900Black } from '@expo-google-fonts/cinzel-decorative';
 import { Text, View } from 'react-native';
 import { GoldBackground, GlassCard, GlassInput, GoldButton, GhostButton } from '../components/GoldGlass';
 import { supabase } from '../online/supabase';
 
 export default function UsernameScreen({ onDone, onSignOut }: { onDone: () => void; onSignOut: () => void }) {
+  const [fontsLoaded] = useFonts({ CinzelDecorative_900Black });
   const [name, setName] = useState('');
   const [country, setCountry] = useState('');
   const [busy, setBusy] = useState(false);
@@ -20,7 +22,7 @@ export default function UsernameScreen({ onDone, onSignOut }: { onDone: () => vo
   return (
     <GoldBackground>
       <View style={{ flex: 1, padding: 24, justifyContent: 'center', gap: 14 }}>
-        <Text style={{ fontSize: 32, fontWeight: '700', color: '#f2d9a3', marginBottom: 2 }}>Chess</Text>
+        <Text style={{ fontSize: 30, letterSpacing: 2, color: '#f2d9a3', marginBottom: 2, fontFamily: fontsLoaded ? 'CinzelDecorative_900Black' : undefined, fontWeight: fontsLoaded ? undefined : '700' }}>CHESSMATE</Text>
         <Text style={{ fontSize: 13, color: 'rgba(230,230,230,0.85)', marginBottom: 18 }}>One last step.</Text>
 
         <GlassCard>

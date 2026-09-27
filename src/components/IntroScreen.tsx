@@ -76,8 +76,8 @@ export default function IntroScreen({ onFinish }: { onFinish: () => void }) {
   const shimmerX = shimmer.interpolate({ inputRange: [0, 1], outputRange: [-80, 260] });
 
   return (
-    <Animated.View style={[styles.root, { opacity: screenOpacity }]}>
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+    <Animated.View style={[{ position: 'absolute', top: 0, left: 0, width: screenW, height: screenH, backgroundColor: '#0D0D0D', zIndex: 999 }, { opacity: screenOpacity }]}>
+      <View style={{ width: screenW, height: screenH, alignItems: 'center', justifyContent: 'center' }}>
         <Animated.Image
           source={KING}
           style={{ width: imgW, height: imgH, opacity: imageOpacity }}
@@ -100,7 +100,6 @@ export default function IntroScreen({ onFinish }: { onFinish: () => void }) {
 }
 
 const styles = StyleSheet.create({
-  root: { ...StyleSheet.absoluteFillObject, backgroundColor: '#0D0D0D', zIndex: 999 },
   loadingWrap: { position: 'absolute', left: 40, right: 40, bottom: 90, alignItems: 'center' },
   loadingLabel: { color: 'rgba(230,215,180,0.9)', fontSize: 14, marginBottom: 10, letterSpacing: 0.5 },
   track: {

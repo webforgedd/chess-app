@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "chess-app",
+    "name": "ChessMate",
     "slug": "chess-app",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -31,17 +31,18 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-  "expo-speech-recognition",
-  [
-    "expo-splash-screen",
-    {
-      "image": "./assets/splash-icon.png",
-      "imageWidth": 220,
-      "resizeMode": "contain",
-      "backgroundColor": "#0D0D0D"
-    }
-  ]
-],
+      "expo-speech-recognition",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 220,
+          "resizeMode": "contain",
+          "backgroundColor": "#0D0D0D"
+        }
+      ],
+      "expo-font"
+    ],
     "extra": {
       "eas": {
         "projectId": "72c56d74-83b1-42f2-8d43-d2162585df19"

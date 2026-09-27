@@ -1,17 +1,94 @@
 import React, { useEffect, useState } from 'react';
-import { SafeAreaView, ScrollView, Text, View } from 'react-native';
-import ScreenHeader from '../components/ScreenHeader';
-import Button from '../components/Button';
+import { Pressable, SafeAreaView, ScrollView, Text, View } from 'react-native';
+import { useFonts, CinzelDecorative_900Black } from '@expo-google-fonts/cinzel-decorative';
 import { radius, useTheme } from '../theme';
 import { supabase } from '../online/supabase';
 import { Challenge, Profile } from '../online/types';
 import { Field } from './AuthScreen';
+
+const GOLD = '#e9c46a';
+const GOLD_LIGHT = '#f7e7bd';
+const GOLD_DIM = 'rgba(210,175,110,0.45)';
 
 const TIMES = [
   { label: '3+2', m: 3, i: 2 }, { label: '5+0', m: 5, i: 0 }, { label: '10+0', m: 10, i: 0 }, { label: '15+10', m: 15, i: 10 },
 ];
 
 type FriendRequest = { id: string; from_user: string; to_user: string; status: string };
+
+// Gold Cinzel hero title -- same treatment as Home/Profile, font size dialed
+// down to 25 for this screen as requested.
+function FriendsHeroTitle({ onBack }: { onBack: () => void }) {
+  const [fontsLoaded] = useFonts({ CinzelDecorative_900Black });
+  return (
+    <View style={{ alignItems: 'center', marginTop: 12, marginBottom: 4 }}>
+      <Pressable onPress={onBack} style={{ position: 'absolute', left: 20, top: 4, padding: 4 }}>
+        <Text style={{ color: GOLD_LIGHT, fontSize: 22 }}>‹</Text>
+      </Pressable>
+      <Text style={{
+        color: GOLD_LIGHT, fontSize: 20, letterSpacing: 3,
+        fontFamily: fontsLoaded ? 'CinzelDecorative_900Black' : undefined,
+        fontWeight: fontsLoaded ? undefined : '800',
+        textShadowColor: 'rgba(233,196,106,0.5)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 18,
+      }}>
+        FRIENDS
+      </Text>
+      <View style={{ width: 120, height: 1, backgroundColor: GOLD, opacity: 0.6, marginTop: 8 }} />
+    </View>
+  );
+}
+
+// A gold-glass card: dark surface, subtle gold border, a thin bright rim-light along
+// the top edge -- same "premium" treatment used on the Home/Profile screens.
+function GoldCard({ children }: { children: React.ReactNode }) {
+  return (
+    <View style={{
+      backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: radius.card, padding: 16, gap: 12,
+      borderWidth: 1, borderColor: GOLD_DIM,
+    }}>
+      <View style={{ position: 'absolute', top: 0, left: 16, right: 16, height: 1, backgroundColor: 'rgba(255,240,210,0.35)' }} />
+      {children}
+    </View>
+  );
+}
+
+function GoldButton({ label, onPress, disabled, flex }: { label: string; onPress: () => void; disabled?: boolean; flex?: boolean }) {
+  return (
+    <Pressable onPress={onPress} disabled={disabled} style={({ pressed }) => ({
+      height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center', flex: flex ? 1 : undefined,
+      backgroundColor: GOLD, opacity: disabled ? 0.4 : pressed ? 0.85 : 1,
+    })}>
+      <Text style={{ color: '#1a1408', fontSize: 16, fontWeight: '700' }}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function GhostGoldButton({ label, onPress, flex, small }: { label: string; onPress: () => void; flex?: boolean; small?: boolean }) {
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => ({
+      height: small ? 44 : 50, borderRadius: 16, alignItems: 'center', justifyContent: 'center', flex: flex ? 1 : undefined,
+      backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: GOLD_DIM, opacity: pressed ? 0.7 : 1,
+    })}>
+      <Text style={{ color: GOLD_LIGHT, fontSize: 15, fontWeight: '700' }}>{label}</Text>
+    </Pressable>
+  );
+}
+
+// Time-control chip, matching the Home screen's chip style
+function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={{
+        width: 70, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center',
+        backgroundColor: on ? GOLD : 'rgba(255,255,255,0.06)',
+        borderWidth: 1, borderColor: on ? GOLD : GOLD_DIM,
+      }}
+    >
+      <Text style={{ color: on ? '#1a1408' : 'rgba(230,222,205,0.9)', fontWeight: '700' }}>{label}</Text>
+    </Pressable>
+  );
+}
 
 export default function FriendsScreen({ profile, onGame, onBack }: {
   profile: Profile; onGame: (id: string) => void; onBack: () => void;
@@ -79,73 +156,71 @@ export default function FriendsScreen({ profile, onGame, onBack }: {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: t.bg }}>
-      <ScreenHeader title="Friends" onBack={onBack} />
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
+      <FriendsHeroTitle onBack={onBack} />
+      <ScrollView contentContainerStyle={{ padding: 16, gap: 14 }}>
 
-        <View style={{ backgroundColor: t.surface, borderRadius: radius.card, padding: 16, gap: 12 }}>
-          <Text style={{ color: t.text, fontSize: 15, fontWeight: '600' }}>{friendCount} friends</Text>
+        <GoldCard>
+          <Text style={{ color: t.text, fontSize: 15, fontWeight: '700' }}>{friendCount} friends</Text>
           <Field placeholder="Add friend by username" value={friendName} onChangeText={setFriendName} autoCapitalize="none" autoCorrect={false} />
-          <Button primary label="Send friend request" onPress={sendFriend} disabled={!friendName.trim()} />
-          {!!friendMsg && <Text style={{ color: t.text, fontSize: 14 }}>{friendMsg}</Text>}
-        </View>
+          <GoldButton label="Send friend request" onPress={sendFriend} disabled={!friendName.trim()} />
+          {!!friendMsg && <Text style={{ color: 'rgba(230,222,205,0.85)', fontSize: 14 }}>{friendMsg}</Text>}
+        </GoldCard>
 
         {incomingFriend.length > 0 && (
-          <View style={{ backgroundColor: t.surface, borderRadius: radius.card, padding: 16, gap: 10 }}>
-            <Text style={{ color: t.text, fontSize: 16, fontWeight: '600' }}>Friend requests</Text>
+          <GoldCard>
+            <Text style={{ color: t.text, fontSize: 16, fontWeight: '700' }}>Friend requests</Text>
             {incomingFriend.map((f) => (
-              <View key={f.id} style={{ gap: 6 }}>
-                <Text style={{ color: t.textMuted, fontSize: 14 }}>{f.fromName}</Text>
+              <View key={f.id} style={{ gap: 8 }}>
+                <Text style={{ color: 'rgba(230,222,205,0.75)', fontSize: 14 }}>{f.fromName}</Text>
                 <View style={{ flexDirection: 'row', gap: 8 }}>
-                  <Button flex primary label="Accept" onPress={() => acceptFriend(f.id)} />
-                  <Button flex label="Decline" onPress={() => declineFriend(f.id)} />
+                  <GoldButton flex label="Accept" onPress={() => acceptFriend(f.id)} />
+                  <GhostGoldButton flex small label="Decline" onPress={() => declineFriend(f.id)} />
                 </View>
               </View>
             ))}
-          </View>
+          </GoldCard>
         )}
 
         {incoming.length > 0 && (
-          <View style={{ backgroundColor: t.surface, borderRadius: radius.card, padding: 16, gap: 10 }}>
-            <Text style={{ color: t.text, fontSize: 16, fontWeight: '600' }}>Challenges for you</Text>
+          <GoldCard>
+            <Text style={{ color: t.text, fontSize: 16, fontWeight: '700' }}>Challenges for you</Text>
             {incoming.map((c) => (
-              <View key={c.id} style={{ gap: 6 }}>
-                <Text style={{ color: t.textMuted, fontSize: 14 }}>{c.fromName} · {c.minutes}+{c.increment}</Text>
+              <View key={c.id} style={{ gap: 8 }}>
+                <Text style={{ color: 'rgba(230,222,205,0.75)', fontSize: 14 }}>{c.fromName} · {c.minutes}+{c.increment}</Text>
                 <View style={{ flexDirection: 'row', gap: 8 }}>
-                  <Button flex primary label="Accept" onPress={() => accept(c.id)} />
-                  <Button flex label="Decline" onPress={() => decline(c.id)} />
+                  <GoldButton flex label="Accept" onPress={() => accept(c.id)} />
+                  <GhostGoldButton flex small label="Decline" onPress={() => decline(c.id)} />
                 </View>
               </View>
             ))}
-          </View>
+          </GoldCard>
         )}
 
-        <View style={{ backgroundColor: t.surface, borderRadius: radius.card, padding: 16, gap: 12 }}>
-          <Text style={{ color: t.text, fontSize: 15, fontWeight: '600' }}>Challenge a friend by username</Text>
+        <GoldCard>
+          <Text style={{ color: t.text, fontSize: 15, fontWeight: '700' }}>Challenge a friend by username</Text>
           <Field placeholder="Their username" value={username} onChangeText={setUsername} autoCapitalize="none" autoCorrect={false} />
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {TIMES.map((o, i) => (
-              <View key={o.label} style={{ width: 70 }}>
-                <Button label={o.label} primary={i === idx} onPress={() => setIdx(i)} />
-              </View>
+              <Chip key={o.label} label={o.label} on={i === idx} onPress={() => setIdx(i)} />
             ))}
           </View>
-          <Button primary label="Send challenge" onPress={send} disabled={!username.trim()} />
-          {!!msg && <Text style={{ color: t.text, fontSize: 14 }}>{msg}</Text>}
-        </View>
+          <GoldButton label="Send challenge" onPress={send} disabled={!username.trim()} />
+          {!!msg && <Text style={{ color: 'rgba(230,222,205,0.85)', fontSize: 14 }}>{msg}</Text>}
+        </GoldCard>
 
         {outgoing.length > 0 && (
-          <View style={{ backgroundColor: t.surface, borderRadius: radius.card, padding: 16, gap: 10 }}>
-            <Text style={{ color: t.text, fontSize: 16, fontWeight: '600' }}>Waiting for a reply</Text>
+          <GoldCard>
+            <Text style={{ color: t.text, fontSize: 16, fontWeight: '700' }}>Waiting for a reply</Text>
             {outgoing.map((c) => (
               <View key={c.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Text style={{ flex: 1, color: t.textMuted, fontSize: 14 }}>{c.toName} · {c.minutes}+{c.increment}</Text>
-                <View style={{ width: 90 }}><Button label="Cancel" onPress={() => cancel(c.id)} /></View>
+                <Text style={{ flex: 1, color: 'rgba(230,222,205,0.75)', fontSize: 14 }}>{c.toName} · {c.minutes}+{c.increment}</Text>
+                <View style={{ width: 90 }}><GhostGoldButton small label="Cancel" onPress={() => cancel(c.id)} /></View>
               </View>
             ))}
-          </View>
+          </GoldCard>
         )}
 
-        <Button label="Back" onPress={onBack} />
+        <GhostGoldButton label="Back" onPress={onBack} />
       </ScrollView>
     </SafeAreaView>
   );

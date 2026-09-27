@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Pressable, SafeAreaView, ScrollView, Text, View } from 'react-native';
-import Button from '../components/Button';
-import ScreenHeader from '../components/ScreenHeader';
+import { useFonts, CinzelDecorative_900Black } from '@expo-google-fonts/cinzel-decorative';
 import { radius, useTheme } from '../theme';
 import { Mode, TimeControl } from '../game/useChessGame';
 
@@ -15,62 +14,111 @@ const TIMES: { label: string; tc: TimeControl }[] = [
   { label: '15+10', tc: { minutes: 15, increment: 10 } },
 ];
 
+const GOLD = '#e9c46a';
+const GOLD_LIGHT = '#f7e7bd';
+const GOLD_DIM = 'rgba(210,175,110,0.45)';
+
+// A gold-glass card: dark surface, subtle gold border, a thin bright rim-light along
+// the top edge to catch the light -- the same "premium" treatment used on the login
+// and profile screens, applied here to the Play tab's cards.
+function GoldCard({ children }: { children: React.ReactNode }) {
+  return (
+    <View style={{
+      backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: radius.card, padding: 16, gap: 12,
+      borderWidth: 1, borderColor: GOLD_DIM,
+    }}>
+      <View style={{ position: 'absolute', top: 0, left: 16, right: 16, height: 1, backgroundColor: 'rgba(255,240,210,0.35)' }} />
+      {children}
+    </View>
+  );
+}
+
+function Chip({ label, on, onPress, flex }: { label: string; on: boolean; onPress: () => void; flex?: boolean }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={{
+        paddingHorizontal: 14, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center',
+        flex: flex ? 1 : undefined, backgroundColor: on ? GOLD : 'rgba(255,255,255,0.06)',
+        borderWidth: 1, borderColor: on ? GOLD : GOLD_DIM,
+      }}
+    >
+      <Text style={{ color: on ? '#1a1408' : 'rgba(230,222,205,0.9)', fontWeight: '700' }}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function GoldButton({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => ({
+      height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center',
+      backgroundColor: GOLD, opacity: pressed ? 0.85 : 1,
+    })}>
+      <Text style={{ color: '#1a1408', fontSize: 16, fontWeight: '700' }}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function GhostGoldButton({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => ({
+      height: 50, borderRadius: 16, alignItems: 'center', justifyContent: 'center',
+      backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: GOLD_DIM, opacity: pressed ? 0.7 : 1,
+    })}>
+      <Text style={{ color: GOLD_LIGHT, fontSize: 15, fontWeight: '700' }}>{label}</Text>
+    </Pressable>
+  );
+}
+
 export default function HomeScreen({ onPlay, onOnline }: { onPlay: (m: Mode, level: number, tc: TimeControl) => void; onOnline: () => void }) {
   const t = useTheme();
   const [level, setLevel] = useState(3);
   const [timeIdx, setTimeIdx] = useState(4); // 10+0
   const tc = TIMES[timeIdx].tc;
+  const [fontsLoaded] = useFonts({ CinzelDecorative_900Black });
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: t.bg }}>
-      <ScreenHeader title="Chess" />
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
-        <Text style={{ color: t.textMuted, fontSize: 15, marginTop: 4 }}>Pick how you want to play.</Text>
+      <ScrollView contentContainerStyle={{ padding: 20, gap: 14 }}>
+        {/* Hero title */}
+        <View style={{ alignItems: 'center', marginTop: 12, marginBottom: 4 }}>
+          <Text style={{
+            color: GOLD_LIGHT, fontSize: 40, letterSpacing: 3,
+            fontFamily: fontsLoaded ? 'CinzelDecorative_900Black' : undefined,
+            fontWeight: fontsLoaded ? undefined : '800',
+            textShadowColor: 'rgba(233,196,106,0.5)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 18,
+          }}>
+            CHESSMATE
+          </Text>
+          <View style={{ width: 120, height: 1, backgroundColor: GOLD, opacity: 0.6, marginTop: 8, marginBottom: 10 }} />
+          <Text style={{ color: 'rgba(230,222,205,0.75)', fontSize: 13, letterSpacing: 1 }}>PICK HOW YOU WANT TO PLAY</Text>
+        </View>
 
-        <View style={{ backgroundColor: t.surface, borderRadius: radius.card, padding: 16, gap: 12 }}>
-          <Text style={{ color: t.text, fontSize: 15, fontWeight: '600' }}>Time (minutes + increment seconds)</Text>
+        <GoldCard>
+          <Text style={{ color: t.text, fontSize: 15, fontWeight: '700' }}>Time control</Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {TIMES.map((o, i) => (
-              <Pressable
-                key={o.label}
-                onPress={() => setTimeIdx(i)}
-                style={{
-                  paddingHorizontal: 14, height: 40, borderRadius: 20, justifyContent: 'center',
-                  backgroundColor: i === timeIdx ? t.primary : t.surface2,
-                }}
-              >
-                <Text style={{ color: i === timeIdx ? t.onPrimary : t.text, fontWeight: '600' }}>{o.label}</Text>
-              </Pressable>
+              <Chip key={o.label} label={o.label} on={i === timeIdx} onPress={() => setTimeIdx(i)} />
             ))}
           </View>
-        </View>
+        </GoldCard>
 
-        <View style={{ backgroundColor: t.surface, borderRadius: radius.card, padding: 16, gap: 12 }}>
-          <Text style={{ color: t.text, fontSize: 15, fontWeight: '600' }}>
-            Computer level {level}: {LEVEL_NAMES[level]}
+        <GoldCard>
+          <Text style={{ color: t.text, fontSize: 15, fontWeight: '700' }}>
+            Computer level {level} · {LEVEL_NAMES[level]}
           </Text>
-          <View style={{ flexDirection: 'row', gap: 6 }}>
+          <View style={{ flexDirection: 'row', gap: 1, marginTop: 4, marginBottom: 8 }}>
             {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
-              <Pressable
-                key={n}
-                onPress={() => setLevel(n)}
-                accessibilityLabel={`Level ${n}`}
-                style={{
-                  flex: 1, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
-                  backgroundColor: n === level ? t.primary : t.surface2,
-                }}
-              >
-                <Text style={{ color: n === level ? t.onPrimary : t.text, fontWeight: '600' }}>{n}</Text>
-              </Pressable>
+              <Chip key={n} label={String(n)} on={n === level} onPress={() => setLevel(n)} flex />
             ))}
           </View>
-          <Button primary label="Play the computer" onPress={() => onPlay('computer', level, tc)} />
-        </View>
+          <GoldButton label="Play the Computer" onPress={() => onPlay('computer', level, tc)} />
+        </GoldCard>
 
-        <View style={{ backgroundColor: t.surface, borderRadius: radius.card, padding: 16, gap: 12 }}>
-          <Button label="Pass and play" onPress={() => onPlay('local', level, tc)} />
-          <Button label="Play online" onPress={onOnline} />
-        </View>
+        <GoldCard>
+          <GhostGoldButton label="Pass and Play" onPress={() => onPlay('local', level, tc)} />
+          <GhostGoldButton label="Play Online" onPress={onOnline} />
+        </GoldCard>
       </ScrollView>
     </SafeAreaView>
   );

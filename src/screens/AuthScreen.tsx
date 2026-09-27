@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { useFonts, CinzelDecorative_900Black } from '@expo-google-fonts/cinzel-decorative';
 import { Text, TextInput, View } from 'react-native';
 import { useTheme } from '../theme';
 import { GoldBackground, GlassCard, GlassInput, GoldButton, GhostButton } from '../components/GoldGlass';
 import { supabase } from '../online/supabase';
 
 export default function AuthScreen() {
+  const [fontsLoaded] = useFonts({ CinzelDecorative_900Black });
   const [signUp, setSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,7 +25,7 @@ export default function AuthScreen() {
   return (
     <GoldBackground>
       <View style={{ flex: 1, padding: 24, justifyContent: 'center', gap: 14 }}>
-        <Text style={{ fontSize: 32, fontWeight: '700', color: '#f2d9a3', marginBottom: 2 }}>Chess</Text>
+        <Text style={{ fontSize: 30, letterSpacing: 2, color: '#f2d9a3', marginBottom: 2, fontFamily: fontsLoaded ? 'CinzelDecorative_900Black' : undefined, fontWeight: fontsLoaded ? undefined : '700' }}>CHESSMATE</Text>
         <Text style={{ fontSize: 13, color: 'rgba(230,230,230,0.85)', marginBottom: 18 }}>Play online. Anywhere.</Text>
 
         <GlassCard>

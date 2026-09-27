@@ -634,3 +634,26 @@ end $$;
 
 revoke execute on function public.update_username from public, anon;
 grant execute on function public.update_username to authenticated;
+
+-- ---------- Puzzle progress (server-saved) ----------
+create table if not exists public.puzzle_solves (
+  profile_id uuid not null references public.profiles(id),
+  puzzle_id text not null,
+  solved_at timestamptz not null default now(),
+  primary key (profile_id, puzzle_id)
+);
+alter table public.puzzle_solves enable row level security;
+drop policy if exists "see own puzzle solves" on public.puzzle_solves;
+create policy "see own puzzle solves" on public.puzzle_solves for select to authenticated
+  using (auth.uid() = profile_id);
+
+create or replace function public.record_puzzle_solve(p_puzzle_id text)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null then raise exception 'not signed in'; end if;
+  insert into public.puzzle_solves (profile_id, puzzle_id) values (auth.uid(), p_puzzle_id)
+    on conflict (profile_id, puzzle_id) do nothing;
+end $$;
+
+revoke execute on function public.record_puzzle_solve from public, anon;
+grant execute on function public.record_puzzle_solve to authenticated;
