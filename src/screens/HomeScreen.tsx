@@ -107,7 +107,7 @@ export default function HomeScreen({ onPlay, onOnline }: { onPlay: (m: Mode, lev
           <Text style={{ color: t.text, fontSize: 15, fontWeight: '700' }}>
             Computer level {level} · {LEVEL_NAMES[level]}
           </Text>
-          <View style={{ flexDirection: 'row', gap: 1, marginTop: 4, marginBottom: 8 }}>
+          <View style={{ flexDirection: 'row',  }}>
             {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
               <Chip key={n} label={String(n)} on={n === level} onPress={() => setLevel(n)} flex />
             ))}

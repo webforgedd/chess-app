@@ -2,8 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
 import { Move } from 'chess.js';
 import { ExpoSpeechRecognitionModule } from 'expo-speech-recognition';
-import { radius, useTheme } from '../theme';
-import Button from '../components/Button';
+import { useGameSkin, SkinButton, SkinPanel } from '../components/GameChrome';
 import { parseSpokenMove } from './parseSpokenMove';
 
 type Props = {
@@ -13,7 +12,7 @@ type Props = {
 };
 
 export default function VoiceMoveButton({ legalMoves, onMove, disabled }: Props) {
-  const t = useTheme();
+  const skin = useGameSkin();
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [candidates, setCandidates] = useState<Move[] | null>(null);
@@ -77,7 +76,8 @@ export default function VoiceMoveButton({ legalMoves, onMove, disabled }: Props)
         accessibilityLabel="Say your move"
         style={{
           width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center',
-          backgroundColor: listening ? t.primary : t.surface, opacity: disabled ? 0.4 : 1,
+          backgroundColor: listening ? skin.accent : skin.panelBg2, opacity: disabled ? 0.4 : 1,
+          borderWidth: skin.premium ? 1 : 0, borderColor: skin.border,
         }}
       >
         <Text style={{ fontSize: 20 }}>🎤</Text>
@@ -85,35 +85,35 @@ export default function VoiceMoveButton({ legalMoves, onMove, disabled }: Props)
 
       <Modal visible={listening} transparent animationType="fade">
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center' }}>
-          <View style={{ backgroundColor: t.surface, borderRadius: radius.card, padding: 20, width: '80%', gap: 10, alignItems: 'center' }}>
+          <SkinPanel skin={skin} style={{ width: '80%', gap: 10, alignItems: 'center' }}>
             <Text style={{ fontSize: 32 }}>🎙️</Text>
-            <Text style={{ color: t.text, fontSize: 16, fontWeight: '600' }}>Listening...</Text>
-            <Text style={{ color: t.textMuted, fontSize: 15, minHeight: 22 }}>{transcript}</Text>
-            <Button label="Cancel" onPress={() => ExpoSpeechRecognitionModule.stop()} />
-          </View>
+            <Text style={{ color: skin.text, fontSize: 16, fontWeight: '600' }}>Listening...</Text>
+            <Text style={{ color: skin.textMuted, fontSize: 15, minHeight: 22 }}>{transcript}</Text>
+            <View style={{ marginTop: 4, width: '100%' }}><SkinButton skin={skin} label="Cancel" onPress={() => ExpoSpeechRecognitionModule.stop()} /></View>
+          </SkinPanel>
         </View>
       </Modal>
 
       <Modal visible={!!candidates} transparent animationType="fade" onRequestClose={() => setCandidates(null)}>
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center' }}>
-          <View style={{ backgroundColor: t.surface, borderRadius: radius.card, padding: 20, width: '80%', gap: 10 }}>
-            <Text style={{ color: t.text, fontSize: 16, fontWeight: '600' }}>Which one did you mean?</Text>
+          <SkinPanel skin={skin} style={{ width: '80%', gap: 10 }}>
+            <Text style={{ color: skin.text, fontSize: 16, fontWeight: '600' }}>Which one did you mean?</Text>
             {candidates?.map((m) => (
-              <Button key={m.san} label={m.san} onPress={() => pick(m)} />
+              <SkinButton key={m.san} skin={skin} label={m.san} onPress={() => pick(m)} />
             ))}
-            <Button label="Cancel" onPress={() => setCandidates(null)} />
-          </View>
+            <SkinButton skin={skin} label="Cancel" onPress={() => setCandidates(null)} />
+          </SkinPanel>
         </View>
       </Modal>
 
       <Modal visible={!!notFound} transparent animationType="fade" onRequestClose={() => setNotFound(null)}>
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center' }}>
-          <View style={{ backgroundColor: t.surface, borderRadius: radius.card, padding: 20, width: '80%', gap: 10 }}>
-            <Text style={{ color: t.text, fontSize: 16, fontWeight: '600' }}>Didn't catch a legal move</Text>
-            <Text style={{ color: t.textMuted, fontSize: 14 }}>Heard: "{notFound}"</Text>
-            <Button primary label="Try again" onPress={() => { setNotFound(null); start(); }} />
-            <Button label="Cancel" onPress={() => setNotFound(null)} />
-          </View>
+          <SkinPanel skin={skin} style={{ width: '80%', gap: 10 }}>
+            <Text style={{ color: skin.text, fontSize: 16, fontWeight: '600' }}>Didn't catch a legal move</Text>
+            <Text style={{ color: skin.textMuted, fontSize: 14 }}>Heard: "{notFound}"</Text>
+            <SkinButton skin={skin} primary label="Try again" onPress={() => { setNotFound(null); start(); }} />
+            <SkinButton skin={skin} label="Cancel" onPress={() => setNotFound(null)} />
+          </SkinPanel>
         </View>
       </Modal>
     </>

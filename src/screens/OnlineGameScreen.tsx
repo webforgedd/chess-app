@@ -1,19 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, ImageBackground, Modal, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Modal, Pressable, SafeAreaView, ScrollView, Text, View } from 'react-native';
 import { Chess, Square } from 'chess.js';
 import Board from '../components/Board';
-import Button from '../components/Button';
 import PlayerBar, { fmt } from '../components/PlayerBar';
 import Reactions from '../components/Reactions';
 import ScreenHeader from '../components/ScreenHeader';
+import { useGameSkin, SkinButton, SkinPanel } from '../components/GameChrome';
 import VoiceMoveButton from '../voice/VoiceMoveButton';
 import ChatSheet from '../online/ChatSheet';
-import { radius, useTheme } from '../theme';
-import { useSettings } from '../settings';
 import { supabase } from '../online/supabase';
 import { Game, MoveRow, Profile } from '../online/types';
-
-const MARBLE_BG = require('../../assets/login-bg.jpg');
 
 const PROMO: { p: 'q' | 'r' | 'b' | 'n'; glyph: string; label: string }[] = [
   { p: 'q', glyph: '♛\uFE0E', label: 'Queen' }, { p: 'r', glyph: '♜\uFE0E', label: 'Rook' },
@@ -29,13 +25,11 @@ const REASONS: Record<string, string> = {
 export default function OnlineGameScreen({ gameId, me, onExit, onReview, onRematch }: {
   gameId: string; me: string; onExit: () => void; onReview: (sans: string[]) => void; onRematch: (newGameId: string) => void;
 }) {
-  const t = useTheme();
-  const { s } = useSettings();
-  const royal = s.pieceStyle === 'royal';
+  const skin = useGameSkin();
   const [game, setGame] = useState<Game | null>(null);
   const [sans, setSans] = useState<string[]>([]);
   const [names, setNames] = useState<Record<string, Profile>>({});
-  const [skew, setSkew] = useState(0); // server time minus phone time
+  const [skew, setSkew] = useState(0);
   const [now, setNow] = useState(Date.now());
   const [sel, setSel] = useState<Square | null>(null);
   const [targets, setTargets] = useState<Square[]>([]);
@@ -47,16 +41,12 @@ export default function OnlineGameScreen({ gameId, me, onExit, onReview, onRemat
   const claimed = useRef(false);
   const rematchNavigated = useRef(false);
 
-  // Rebuild the position from the move list (keeps castling, repetition etc. correct)
   const chess = useMemo(() => { const c = new Chess(); sans.forEach((s) => c.move(s)); return c; }, [sans]);
   const hist = chess.history({ verbose: true });
   const last = hist.length ? { from: hist[hist.length - 1].from, to: hist[hist.length - 1].to } : null;
 
   const applyMoves = useCallback((rows: MoveRow[]) => {
     const sorted = rows.sort((a, b) => a.ply - b.ply).map((r) => r.san);
-    // A background refresh can occasionally fetch a snapshot from just before our own
-    // move finished saving, which would otherwise flash the board back a move and then
-    // forward again once the next refresh catches up. Never move backwards.
     setSans((prev) => (sorted.length >= prev.length ? sorted : prev));
   }, []);
 
@@ -69,7 +59,6 @@ export default function OnlineGameScreen({ gameId, me, onExit, onReview, onRemat
     if (m) applyMoves(m as MoveRow[]);
   }, [gameId, applyMoves]);
 
-  // First load, player names, server clock offset
   useEffect(() => {
     refresh();
     supabase.rpc('server_time').then(({ data }: any) => { if (data) setSkew(Date.parse(data) - Date.now()); });
@@ -83,7 +72,6 @@ export default function OnlineGameScreen({ gameId, me, onExit, onReview, onRemat
     });
   }, [game?.white, game?.black]);
 
-  // Live updates, plus a slow poll as a safety net
   useEffect(() => {
     const ch = supabase.channel(`game-${gameId}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'games', filter: `id=eq.${gameId}` }, refresh)
@@ -93,10 +81,8 @@ export default function OnlineGameScreen({ gameId, me, onExit, onReview, onRemat
     return () => { clearInterval(poll); supabase.removeChannel(ch); };
   }, [gameId, refresh]);
 
-  // Clock tick
   useEffect(() => { const id = setInterval(() => setNow(Date.now()), 200); return () => clearInterval(id); }, []);
 
-  // When the player to move has run out of time, ask the server to end the game
   useEffect(() => {
     if (!game || game.status !== 'active' || game.move_count < 1 || !game.last_move_at || claimed.current) return;
     const spent = Math.max(0, now + skew - Date.parse(game.last_move_at));
@@ -112,8 +98,6 @@ export default function OnlineGameScreen({ gameId, me, onExit, onReview, onRemat
     }
   }, [game?.rematch_game_id]);
 
-  // Unread chat badge. This must run on every render (not after the "if (!game)"
-  // return below), or React sees a different number of hooks between renders.
   useEffect(() => {
     if (chatOpen) { setUnread(0); return; }
     const ch = supabase
@@ -126,7 +110,11 @@ export default function OnlineGameScreen({ gameId, me, onExit, onReview, onRemat
   }, [gameId, chatOpen]);
 
   if (!game) {
-    return <SafeAreaView style={{ flex: 1, backgroundColor: t.bg, justifyContent: 'center', alignItems: 'center' }}><Text style={{ color: t.text }}>Loading game...</Text></SafeAreaView>;
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: skin.bg, justifyContent: 'center', alignItems: 'center' }}>
+        <Text style={{ color: skin.text }}>Loading game...</Text>
+      </SafeAreaView>
+    );
   }
 
   const myColor: 'w' | 'b' = game.white === me ? 'w' : 'b';
@@ -135,14 +123,10 @@ export default function OnlineGameScreen({ gameId, me, onExit, onReview, onRemat
   const mine = names[me];
   const active = game.status === 'active';
 
-  // Clocks: the side to move loses time once White has moved
   const elapsed = active && game.move_count >= 1 && game.last_move_at ? Math.max(0, now + skew - Date.parse(game.last_move_at)) : 0;
   const wLeft = game.white_ms - (game.turn === 'w' ? elapsed : 0);
   const bLeft = game.black_ms - (game.turn === 'b' ? elapsed : 0);
-  // The move is checked again on the server (see supabase/functions/make-move) before
-  // it is written, using the game's real position -- not whatever this phone claims.
-  // We still validate locally first purely so a wrong tap gives instant feedback
-  // instead of waiting on the network.
+
   const commitMove = async (from: Square, to: Square, promotion: 'q' | 'r' | 'b' | 'n') => {
     const c = new Chess(chess.fen());
     let m;
@@ -152,8 +136,6 @@ export default function OnlineGameScreen({ gameId, me, onExit, onReview, onRemat
       body: { gameId, from, to, promotion },
     });
     if (error || data?.error) {
-      // The server disagreed (stale local state, or a tampered request) -- undo the
-      // optimistic move shown above and resync with the real game.
       setSans(sans);
       setMsg(data?.error ?? error?.message ?? 'Move rejected by the server');
       refresh();
@@ -195,40 +177,35 @@ export default function OnlineGameScreen({ gameId, me, onExit, onReview, onRemat
   const myLeft = myColor === 'w' ? wLeft : bLeft;
   const oppLeft = myColor === 'w' ? bLeft : wLeft;
 
-  return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: royal ? '#0D0D0D' : t.bg }}>
-      {royal && (
-        <ImageBackground source={MARBLE_BG} resizeMode="cover" style={StyleSheet.absoluteFillObject}>
-          <View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(10,8,5,0.4)' }} />
-        </ImageBackground>
-      )}
+  const Body = (
+    <>
       <ScreenHeader title={opp?.username ? `vs ${opp.username}` : 'Online Game'} onBack={onExit} />
       <ScrollView contentContainerStyle={{ padding: 16, gap: 12, alignItems: 'center', flexGrow: 1 }}>
-        <PlayerBar name={opp?.username ?? 'Opponent'} sub={`Rating ${opp?.rating ?? '...'}`} time={fmt(oppLeft)} active={active && game.move_count >= 1 && game.turn !== myColor} />
+        <PlayerBar skin={skin} name={opp?.username ?? 'Opponent'} sub={`Rating ${opp?.rating ?? '...'}`} time={fmt(oppLeft)} active={active && game.move_count >= 1 && game.turn !== myColor} />
         <Board board={chess.board()} selected={sel} targets={targets} lastMove={last} flipped={myColor === 'b'} onSquarePress={press} />
-        <PlayerBar name={mine?.username ?? 'You'} sub={`Rating ${mine?.rating ?? '...'} · ${myColor === 'w' ? 'White' : 'Black'}`} time={fmt(myLeft)} active={active && game.move_count >= 1 && game.turn === myColor} />
+        <PlayerBar skin={skin} name={mine?.username ?? 'You'} sub={`Rating ${mine?.rating ?? '...'} · ${myColor === 'w' ? 'White' : 'Black'}`} time={fmt(myLeft)} active={active && game.move_count >= 1 && game.turn === myColor} />
 
-        <View style={{ backgroundColor: t.surface, borderRadius: radius.card, padding: 12, width: '100%', gap: 4 }}>
-          <Text style={{ color: t.text, fontSize: 15, fontWeight: '600' }}>{status}</Text>
-          <Text style={{ color: t.textMuted, fontSize: 13 }} numberOfLines={1}>{msg || sans.slice(-6).join('  ') || 'No moves yet'}</Text>
-        </View>
+        <SkinPanel skin={skin} style={{ width: '100%' }}>
+          <Text style={{ color: skin.text, fontSize: 15, fontWeight: '600' }}>{status}</Text>
+          <Text style={{ color: skin.textMuted, fontSize: 13 }} numberOfLines={1}>{msg || sans.slice(-6).join('  ') || 'No moves yet'}</Text>
+        </SkinPanel>
 
         <View style={{ width: '100%' }}>
-          <Button label={unread > 0 ? '💬 Chat (' + unread + ')' : '💬 Chat'} onPress={() => setChatOpen(true)} />
+          <SkinButton skin={skin} label={unread > 0 ? '💬 Chat (' + unread + ')' : '💬 Chat'} onPress={() => setChatOpen(true)} />
         </View>
 
         {active && game.move_count >= 0 && <Reactions gameId={gameId} mySide={myColor} />}
 
         {active && offerFromOpp && (
           <View style={{ flexDirection: 'row', gap: 10, width: '100%' }}>
-            <Button flex primary label="Accept draw" onPress={() => answer(true)} />
-            <Button flex label="Decline" onPress={() => answer(false)} />
+            <SkinButton skin={skin} flex primary label="Accept draw" onPress={() => answer(true)} />
+            <SkinButton skin={skin} flex label="Decline" onPress={() => answer(false)} />
           </View>
         )}
         <View style={{ flexDirection: 'row', gap: 10, width: '100%', alignItems: 'center' }}>
-          <Button flex label="Draw" onPress={offerDraw} disabled={!active || game.move_count < 2 || game.draw_offer === myColor} />
-          <Button flex label="Resign" onPress={resign} disabled={!active || game.move_count < 1} />
-          <Button flex primary label={over ? 'Lobby' : 'Leave'} onPress={onExit} />
+          <SkinButton skin={skin} flex label="Draw" onPress={offerDraw} disabled={!active || game.move_count < 2 || game.draw_offer === myColor} />
+          <SkinButton skin={skin} flex label="Resign" onPress={resign} disabled={!active || game.move_count < 1} />
+          <SkinButton skin={skin} flex primary label={over ? 'Lobby' : 'Leave'} onPress={onExit} />
           {active && game.turn === myColor && (
             <VoiceMoveButton
               legalMoves={chess.moves({ verbose: true })}
@@ -240,36 +217,47 @@ export default function OnlineGameScreen({ gameId, me, onExit, onReview, onRemat
 
       <Modal visible={!!promo} transparent animationType="fade" onRequestClose={() => setPromo(null)}>
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center' }}>
-          <View style={{ backgroundColor: t.surface, borderRadius: radius.card, padding: 16, width: '86%', gap: 12 }}>
-            <Text style={{ color: t.text, fontSize: 18, fontWeight: '600' }}>Promote pawn to</Text>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
+          <SkinPanel skin={skin} style={{ width: '86%', gap: 12 }}>
+            <Text style={{ color: skin.text, fontSize: 18, fontWeight: '600' }}>Promote pawn to</Text>
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
               {PROMO.map((o) => (
                 <Pressable key={o.p} onPress={() => { const pr = promo!; setPromo(null); commitMove(pr.from, pr.to, o.p); }}
-                  style={{ flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 12, backgroundColor: t.surface2 }}>
-                  <Text style={{ fontSize: 36, color: t.text }}>{o.glyph}</Text>
-                  <Text style={{ fontSize: 12, color: t.textMuted }}>{o.label}</Text>
+                  style={{ flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 12, backgroundColor: skin.panelBg2 }}>
+                  <Text style={{ fontSize: 36, color: skin.text }}>{o.glyph}</Text>
+                  <Text style={{ fontSize: 12, color: skin.textMuted }}>{o.label}</Text>
                 </Pressable>
               ))}
             </View>
-            <Button label="Cancel" onPress={() => setPromo(null)} />
-          </View>
+            <View style={{ marginTop: 8 }}><SkinButton skin={skin} label="Cancel" onPress={() => setPromo(null)} /></View>
+          </SkinPanel>
         </View>
       </Modal>
 
       <Modal visible={over && !hideResult} transparent animationType="fade" onRequestClose={() => setHideResult(true)}>
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center' }}>
-          <View style={{ backgroundColor: t.surface, borderRadius: radius.card, padding: 20, width: '86%', gap: 12 }}>
-            <Text style={{ color: t.text, fontSize: 24, fontWeight: '700' }}>{title}</Text>
-            <Text style={{ color: t.textMuted, fontSize: 15 }}>{REASONS[game.reason ?? ''] ?? game.reason}</Text>
-            <Button primary label={rematchLabel} onPress={rematch} disabled={game.rematch_offer === myColor} />
-            <Button label="Back to lobby" onPress={onExit} />
-            <Button label="Review game" onPress={() => onReview(sans)} disabled={sans.length < 2} />
-            <Button label="View board" onPress={() => setHideResult(true)} />
-          </View>
+          <SkinPanel skin={skin} style={{ width: '86%', gap: 12 }}>
+            <Text style={{ color: skin.text, fontSize: 24, fontWeight: '700' }}>{title}</Text>
+            <Text style={{ color: skin.textMuted, fontSize: 15 }}>{REASONS[game.reason ?? ''] ?? game.reason}</Text>
+            <View style={{ gap: 10, marginTop: 8 }}>
+              <SkinButton skin={skin} primary label={rematchLabel} onPress={rematch} disabled={game.rematch_offer === myColor} />
+              <SkinButton skin={skin} label="Back to lobby" onPress={onExit} />
+              <SkinButton skin={skin} label="Review game" onPress={() => onReview(sans)} disabled={sans.length < 2} />
+              <SkinButton skin={skin} label="View board" onPress={() => setHideResult(true)} />
+            </View>
+          </SkinPanel>
         </View>
       </Modal>
 
       <ChatSheet visible={chatOpen} onClose={() => setChatOpen(false)} gameId={gameId} me={me} names={names} />
-    </SafeAreaView>
+    </>
   );
+
+  if (skin.Background) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: skin.bg }}>
+        <skin.Background>{Body}</skin.Background>
+      </SafeAreaView>
+    );
+  }
+  return <SafeAreaView style={{ flex: 1, backgroundColor: skin.bg }}>{Body}</SafeAreaView>;
 }

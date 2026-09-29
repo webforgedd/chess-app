@@ -26,7 +26,7 @@ function FriendsHeroTitle({ onBack }: { onBack: () => void }) {
         <Text style={{ color: GOLD_LIGHT, fontSize: 22 }}>‹</Text>
       </Pressable>
       <Text style={{
-        color: GOLD_LIGHT, fontSize: 20, letterSpacing: 3,
+        color: GOLD_LIGHT, fontSize: 25, letterSpacing: 3,
         fontFamily: fontsLoaded ? 'CinzelDecorative_900Black' : undefined,
         fontWeight: fontsLoaded ? undefined : '800',
         textShadowColor: 'rgba(233,196,106,0.5)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 18,

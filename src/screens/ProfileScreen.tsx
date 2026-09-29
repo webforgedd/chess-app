@@ -17,6 +17,40 @@ const GOLD = '#e9c46a';
 const GOLD_LIGHT = '#f7e7bd';
 const GOLD_DIM = 'rgba(210,175,110,0.45)';
 
+function GoldCard({ children, style }: { children: React.ReactNode; style?: any }) {
+  return (
+    <View style={[{
+      backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: radius.card, padding: 16, gap: 8,
+      borderWidth: 1, borderColor: GOLD_DIM, overflow: 'hidden',
+    }, style]}>
+      <View style={{ position: 'absolute', top: 0, left: 16, right: 16, height: 1, backgroundColor: 'rgba(255,240,210,0.35)' }} />
+      {children}
+    </View>
+  );
+}
+
+function GoldButton({ label, onPress, disabled }: { label: string; onPress: () => void; disabled?: boolean }) {
+  return (
+    <Pressable onPress={onPress} disabled={disabled} style={({ pressed }) => ({
+      height: 50, borderRadius: 16, alignItems: 'center', justifyContent: 'center',
+      backgroundColor: GOLD, opacity: disabled ? 0.4 : pressed ? 0.85 : 1,
+    })}>
+      <Text style={{ color: '#1a1408', fontSize: 15, fontWeight: '700' }}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function GhostGoldButton({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => ({
+      height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center',
+      backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: GOLD_DIM, opacity: pressed ? 0.7 : 1,
+    })}>
+      <Text style={{ color: GOLD_LIGHT, fontSize: 15, fontWeight: '700' }}>{label}</Text>
+    </Pressable>
+  );
+}
+
 type Fmt = 'bullet' | 'blitz' | 'rapid';
 const FORMAT_LABEL: Record<Fmt, string> = { bullet: 'Bullet', blitz: 'Blitz', rapid: 'Rapid' };
 
@@ -30,74 +64,19 @@ function fmtDate(iso: string) {
   return d.toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
 }
 
-// Gold Cinzel hero title -- same treatment as the Home screen's "CHESSMATE" heading,
-// reused here for the Profile screen's "PROFILE" heading.
-function ProfileHeroTitle() {
-  const [fontsLoaded] = useFonts({ CinzelDecorative_900Black });
-  return (
-    <View style={{ alignItems: 'center', marginTop: 12, marginBottom: 4 }}>
-      <Text style={{
-        color: GOLD_LIGHT, fontSize: 35, letterSpacing: 3,
-        fontFamily: fontsLoaded ? 'CinzelDecorative_900Black' : undefined,
-        fontWeight: fontsLoaded ? undefined : '800',
-        textShadowColor: 'rgba(233,196,106,0.5)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 18,
-      }}>
-        PROFILE
-      </Text>
-      <View style={{ width: 120, height: 1, backgroundColor: GOLD, opacity: 0.6, marginTop: 8 }} />
-    </View>
-  );
-}
-
-// A gold-glass card: dark surface, subtle gold border, a thin bright rim-light along
-// the top edge -- same "premium" treatment used on the Home screen's cards.
-function GoldCard({ style, children }: { style?: any; children: React.ReactNode }) {
-  return (
-    <View style={[{
-      backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: radius.card, padding: 16,
-      borderWidth: 1, borderColor: GOLD_DIM,
-    }, style]}>
-      <View style={{ position: 'absolute', top: 0, left: 16, right: 16, height: 1, backgroundColor: 'rgba(255,240,210,0.35)' }} />
-      {children}
-    </View>
-  );
-}
-
-function GoldButton({ label, onPress, disabled }: { label: string; onPress: () => void; disabled?: boolean }) {
-  return (
-    <Pressable onPress={onPress} disabled={disabled} style={({ pressed }) => ({
-      height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center',
-      backgroundColor: GOLD, opacity: disabled ? 0.4 : pressed ? 0.85 : 1,
-    })}>
-      <Text style={{ color: '#1a1408', fontSize: 16, fontWeight: '700' }}>{label}</Text>
-    </Pressable>
-  );
-}
-
-function GhostGoldButton({ label, onPress }: { label: string; onPress: () => void }) {
-  return (
-    <Pressable onPress={onPress} style={({ pressed }) => ({
-      height: 50, borderRadius: 16, alignItems: 'center', justifyContent: 'center',
-      backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(210,175,110,0.45)', opacity: pressed ? 0.7 : 1,
-    })}>
-      <Text style={{ color: GOLD_LIGHT, fontSize: 15, fontWeight: '700' }}>{label}</Text>
-    </Pressable>
-  );
-}
-
 function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
-  const t = useTheme();
   return (
     <GoldCard style={{ flex: 1 }}>
       <Text style={{ color: 'rgba(230,222,205,0.75)', fontSize: 12 }}>{label}</Text>
-      <Text style={{ color: t.text, fontSize: 22, fontWeight: '700', marginTop: 4 }}>{value}</Text>
-      {!!sub && <Text style={{ color: 'rgba(230,222,205,0.75)', fontSize: 11, marginTop: 2 }}>{sub}</Text>}
+      <Text style={{ color: GOLD_LIGHT, fontSize: 22, fontWeight: '700' }}>{value}</Text>
+      {!!sub && <Text style={{ color: 'rgba(230,222,205,0.6)', fontSize: 11 }}>{sub}</Text>}
     </GoldCard>
   );
 }
 
 function ProfileInner({ userId, onOpenSettings, onOpenFriends, focused }: { userId: string; onOpenSettings: () => void; onOpenFriends: () => void; focused: boolean }) {
   const t = useTheme();
+  const [fontsLoaded] = useFonts({ CinzelDecorative_900Black });
   const [profile, setProfile] = useState<any>(null);
   const [trendData, setTrendData] = useState<Record<Fmt, number[]>>({ bullet: [], blitz: [], rapid: [] });
   const [trendFmt, setTrendFmt] = useState<Fmt | null>(null);
@@ -148,8 +127,6 @@ function ProfileInner({ userId, onOpenSettings, onOpenFriends, focused }: { user
     const solved = await load<string[]>('solved-puzzles', []);
     setPuzzlesSolved(solved.length);
 
-    // Favorite opening: classify each game's first several moves against a small
-    // known-openings list, then take the most common name per colour.
     if (rows.length) {
       const ids = rows.map((r) => r.id);
       const { data: openers } = await supabase.from('moves').select('game_id, ply, san').in('game_id', ids).lte('ply', 8).order('ply');
@@ -167,7 +144,6 @@ function ProfileInner({ userId, onOpenSettings, onOpenFriends, focused }: { user
       const top = (o: Record<string, number>) => Object.entries(o).sort((a, b) => b[1] - a[1])[0]?.[0];
       setOpening({ white: top(whiteNames), black: top(blackNames) });
 
-      // Knight-mate badge: any game I won by checkmate where the final move was a knight move
       const mateGames = rows.filter((r) => r.reason === 'checkmate' &&
         ((r.result === 'w' && r.white === userId) || (r.result === 'b' && r.black === userId)));
       if (mateGames.length) {
@@ -223,7 +199,6 @@ function ProfileInner({ userId, onOpenSettings, onOpenFriends, focused }: { user
       });
       if (upErr) throw upErr;
       const { data: pub } = supabase.storage.from('avatars').getPublicUrl(path);
-      // cache-bust so the new photo shows immediately instead of a stale cached one
       const url = `${pub.publicUrl}?t=${Date.now()}`;
       const { error: rpcErr } = await supabase.rpc('set_avatar_url', { p_url: url });
       if (rpcErr) throw rpcErr;
@@ -237,8 +212,6 @@ function ProfileInner({ userId, onOpenSettings, onOpenFriends, focused }: { user
 
   useEffect(() => { load_(); }, [userId]);
 
-  // Re-fetch whenever this tab becomes focused again (e.g. after finishing a game),
-  // not just on first mount -- tabs stay mounted, so this would otherwise show stale data.
   const wasFocused = React.useRef(focused);
   useEffect(() => {
     if (focused && !wasFocused.current) load_();
@@ -256,7 +229,6 @@ function ProfileInner({ userId, onOpenSettings, onOpenFriends, focused }: { user
   const losses = games.length - wins - draws;
   const total = Math.max(1, games.length);
 
-  // Win streak from most recent games
   let streak = 0;
   for (const g of games) {
     const won = (g.result === 'w' && g.white === userId) || (g.result === 'b' && g.black === userId);
@@ -265,166 +237,180 @@ function ProfileInner({ userId, onOpenSettings, onOpenFriends, focused }: { user
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: t.bg }}>
-      <ProfileHeroTitle />
       <ScrollView
         style={{ flex: 1, backgroundColor: t.bg }}
-        contentContainerStyle={{ padding: 16, gap: 14 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={t.text} />}
+        contentContainerStyle={{ padding: 20, gap: 14 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={GOLD} />}
       >
-      {/* Header */}
-      <GoldCard style={{ flexDirection: 'row', gap: 14, alignItems: 'center' }}>
-        <Pressable onPress={pickAvatar} style={{ width: 72, height: 72, borderRadius: 36, overflow: 'hidden', borderWidth: 2, borderColor: GOLD }}>
-          <Image source={profile?.avatar_url ? { uri: profile.avatar_url } : KING_AVATAR} style={{ width: 72, height: 72 }} resizeMode="cover" />
-          <View style={{ position: 'absolute', right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0,0,0,0.55)', paddingVertical: 3, alignItems: 'center' }}>
-            {uploading ? <ActivityIndicator size="small" color="#fff" /> : <Text style={{ color: '#fff', fontSize: 9, fontWeight: '700' }}>EDIT</Text>}
-          </View>
-        </Pressable>
-        <View style={{ flex: 1 }}>
-          <Pressable onPress={openEditName} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={{ color: t.text, fontSize: 18, fontWeight: '700' }}>{profile?.username}</Text>
-            <Text style={{ color: 'rgba(230,222,205,0.75)', fontSize: 12 }}>✎</Text>
-          </Pressable>
-          {!!profile?.country && <Text style={{ color: 'rgba(230,222,205,0.75)', fontSize: 12, marginTop: 2 }}>{profile.country}</Text>}
-          <Text style={{ color: 'rgba(230,222,205,0.75)', fontSize: 12, marginTop: 2 }}>
-            Member since {profile ? fmtDate(profile.created_at) : ''}
+        {/* Hero */}
+        <View style={{ alignItems: 'center', marginTop: 12, marginBottom: 4 }}>
+          <Text style={{
+            color: GOLD_LIGHT, fontSize: 34, letterSpacing: 2,
+            fontFamily: fontsLoaded ? 'CinzelDecorative_900Black' : undefined,
+            fontWeight: fontsLoaded ? undefined : '800',
+            textShadowColor: 'rgba(233,196,106,0.5)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 16,
+          }}>
+            PROFILE
           </Text>
-          {!!profile?.avatar_url && (
-            <Pressable onPress={removePhoto}><Text style={{ color: 'rgba(230,222,205,0.75)', fontSize: 11, marginTop: 4, textDecorationLine: 'underline' }}>Remove photo</Text></Pressable>
-          )}
+          <View style={{ width: 110, height: 1, backgroundColor: GOLD, opacity: 0.6, marginTop: 8, marginBottom: 10 }} />
         </View>
-      </GoldCard>
 
-      <Modal visible={editingName} transparent animationType="fade" onRequestClose={() => setEditingName(false)}>
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center' }}>
-          <View style={{ backgroundColor: t.surface, borderRadius: radius.card, padding: 20, width: '86%', gap: 12 }}>
-            <Text style={{ color: t.text, fontSize: 18, fontWeight: '600' }}>Change username</Text>
-            <TextInput
-              value={nameInput} onChangeText={setNameInput} autoCapitalize="none" autoCorrect={false}
-              placeholder="Username" placeholderTextColor={t.textMuted}
-              style={{ backgroundColor: t.surface2, color: t.text, borderRadius: 12, height: 48, paddingHorizontal: 14, fontSize: 16 }}
-            />
-            {!!nameMsg && <Text style={{ color: t.text, fontSize: 13 }}>{nameMsg}</Text>}
-            <GoldButton label={savingName ? 'Saving...' : 'Save'} onPress={saveName} disabled={savingName || nameInput.trim().length < 3} />
-            <GhostGoldButton label="Cancel" onPress={() => setEditingName(false)} />
-          </View>
-        </View>
-      </Modal>
-
-      {/* Ratings */}
-      <Text style={{ color: t.text, fontSize: 16, fontWeight: '700' }}>Ratings</Text>
-      <View style={{ flexDirection: 'row', gap: 12 }}>
-        <Stat label="Bullet" value={String(profile?.rating_bullet ?? 1200)} />
-        <Stat label="Blitz" value={String(profile?.rating_blitz ?? 1200)} />
-      </View>
-      <View style={{ flexDirection: 'row', gap: 12 }}>
-        <Stat label="Rapid" value={String(profile?.rating_rapid ?? 1200)} />
-        <Stat label="Puzzles solved" value={String(puzzlesSolved)} />
-      </View>
-
-      {/* Trend */}
-      <GoldCard>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-          <Text style={{ color: t.text, fontSize: 14, fontWeight: '700' }}>Rating Trend (30 days)</Text>
-          <View style={{ flexDirection: 'row', gap: 6 }}>
-            {(['bullet', 'blitz', 'rapid'] as Fmt[]).map((f) => (
-              <Pressable key={f} onPress={() => setTrendFmt(f)}
-                style={{ paddingHorizontal: 10, height: 26, borderRadius: 13, justifyContent: 'center', backgroundColor: trendFmt === f ? GOLD : 'rgba(255,255,255,0.06)' }}>
-                <Text style={{ fontSize: 11, fontWeight: '700', color: trendFmt === f ? '#1a1408' : 'rgba(230,222,205,0.75)' }}>{FORMAT_LABEL[f]}</Text>
-              </Pressable>
-            ))}
-          </View>
-        </View>
-        {trendFmt && trendData[trendFmt].length >= 2 ? (
-          <Sparkline values={trendData[trendFmt]} width={310} height={90} />
-        ) : (
-          <Text style={{ color: 'rgba(230,222,205,0.75)', fontSize: 13 }}>Play a few rated {trendFmt ? FORMAT_LABEL[trendFmt] : ''} games to see your trend here.</Text>
-        )}
-      </GoldCard>
-
-      {/* Win/Loss/Draw */}
-      <GoldCard>
-        <Text style={{ color: t.text, fontSize: 14, fontWeight: '700', marginBottom: 10 }}>Win / Loss / Draw (last {games.length})</Text>
-        <View style={{ flexDirection: 'row', height: 14, borderRadius: 7, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.06)' }}>
-          <View style={{ flex: wins, backgroundColor: '#6ec878' }} />
-          <View style={{ flex: losses, backgroundColor: '#dc6464' }} />
-          <View style={{ flex: draws || 0.0001, backgroundColor: 'rgba(230,222,205,0.75)' }} />
-        </View>
-        <Text style={{ color: 'rgba(230,222,205,0.75)', fontSize: 12, marginTop: 8 }}>
-          {Math.round((wins / total) * 100)}% Wins · {Math.round((losses / total) * 100)}% Losses · {Math.round((draws / total) * 100)}% Draws
-        </Text>
-      </GoldCard>
-
-      {/* Recent matches */}
-      <Text style={{ color: t.text, fontSize: 16, fontWeight: '700' }}>Recent Matches</Text>
-      {games.length === 0 && <Text style={{ color: t.textMuted, fontSize: 13 }}>No finished online games yet.</Text>}
-      {games.slice(0, 8).map((g) => {
-        const mine = g.white === userId;
-        const oppId = mine ? g.black : g.white;
-        const won = (g.result === 'w' && mine) || (g.result === 'b' && !mine);
-        const drew = g.result === 'd';
-        const change = mine ? g.white_rating_change : g.black_rating_change;
-        return (
-          <View key={g.id} style={{ backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: radius.card, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: GOLD_DIM }}>
-            <View style={{ width: 26, height: 26, borderRadius: 13, borderWidth: 2, borderColor: drew ? 'rgba(230,222,205,0.75)' : won ? '#6ec878' : '#dc6464', alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ color: drew ? 'rgba(230,222,205,0.75)' : won ? '#6ec878' : '#dc6464', fontWeight: '700' }}>{drew ? '=' : won ? '✓' : '✗'}</Text>
+        {/* Header card */}
+        <GoldCard style={{ flexDirection: 'row', gap: 14, alignItems: 'center' }}>
+          <Pressable onPress={pickAvatar} style={{ width: 72, height: 72, borderRadius: 36, overflow: 'hidden', borderWidth: 2, borderColor: GOLD }}>
+            <Image source={profile?.avatar_url ? { uri: profile.avatar_url } : KING_AVATAR} style={{ width: 72, height: 72 }} resizeMode="cover" />
+            <View style={{ position: 'absolute', right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0,0,0,0.55)', paddingVertical: 3, alignItems: 'center' }}>
+              {uploading ? <ActivityIndicator size="small" color="#fff" /> : <Text style={{ color: '#fff', fontSize: 9, fontWeight: '700' }}>EDIT</Text>}
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: t.text, fontSize: 14, fontWeight: '600' }}>{names[oppId] ?? 'Opponent'}</Text>
-              <Text style={{ color: 'rgba(230,222,205,0.75)', fontSize: 11 }}>{g.move_count} moves</Text>
-            </View>
-            {change != null && (
-              <Text style={{ color: change > 0 ? '#6ec878' : change < 0 ? '#dc6464' : 'rgba(230,222,205,0.75)', fontWeight: '700' }}>
-                {change > 0 ? '+' : ''}{change}
-              </Text>
+          </Pressable>
+          <View style={{ flex: 1 }}>
+            <Pressable onPress={openEditName} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={{ color: '#fff', fontSize: 18, fontWeight: '700' }}>{profile?.username}</Text>
+              <Text style={{ color: 'rgba(230,222,205,0.7)', fontSize: 12 }}>✎</Text>
+            </Pressable>
+            {!!profile?.country && <Text style={{ color: 'rgba(230,222,205,0.75)', fontSize: 12, marginTop: 2 }}>{profile.country}</Text>}
+            <Text style={{ color: 'rgba(230,222,205,0.75)', fontSize: 12, marginTop: 2 }}>
+              Member since {profile ? fmtDate(profile.created_at) : ''}
+            </Text>
+            {!!profile?.avatar_url && (
+              <Pressable onPress={removePhoto}><Text style={{ color: 'rgba(230,222,205,0.6)', fontSize: 11, marginTop: 4, textDecorationLine: 'underline' }}>Remove photo</Text></Pressable>
             )}
           </View>
-        );
-      })}
-
-      {/* Trophies */}
-      <Text style={{ color: t.text, fontSize: 16, fontWeight: '700' }}>Trophies & Badges</Text>
-      <View style={{ flexDirection: 'row', gap: 10 }}>
-        {streak >= 3 && (
-          <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 16, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: GOLD_DIM }}>
-            <Text style={{ fontSize: 22, color: GOLD }}>★</Text>
-            <Text style={{ color: 'rgba(230,222,205,0.75)', fontSize: 10, textAlign: 'center', marginTop: 4 }}>{streak}-Win{'\n'}Streak</Text>
-          </View>
-        )}
-        {knightMate && (
-          <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 16, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: GOLD_DIM }}>
-            <Text style={{ fontSize: 22, color: GOLD }}>★</Text>
-            <Text style={{ color: 'rgba(230,222,205,0.75)', fontSize: 10, textAlign: 'center', marginTop: 4 }}>Knight{'\n'}Mate</Text>
-          </View>
-        )}
-        {puzzlesSolved >= 10 && (
-          <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 16, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: GOLD_DIM }}>
-            <Text style={{ fontSize: 22, color: GOLD }}>★</Text>
-            <Text style={{ color: 'rgba(230,222,205,0.75)', fontSize: 10, textAlign: 'center', marginTop: 4 }}>Puzzle{'\n'}Solver</Text>
-          </View>
-        )}
-        {streak < 3 && !knightMate && puzzlesSolved < 10 && (
-          <Text style={{ color: 'rgba(230,222,205,0.75)', fontSize: 13 }}>Play games and solve puzzles to earn badges.</Text>
-        )}
-      </View>
-
-      {/* Favorite opening */}
-      {(opening.white || opening.black) && (
-        <GoldCard>
-          <Text style={{ color: 'rgba(230,222,205,0.75)', fontSize: 12, marginBottom: 6 }}>Favorite Opening</Text>
-          {!!opening.white && <Text style={{ color: t.text, fontSize: 13, fontWeight: '600' }}>White: {opening.white}</Text>}
-          {!!opening.black && <Text style={{ color: t.text, fontSize: 13, fontWeight: '600', marginTop: 2 }}>Black: {opening.black}</Text>}
         </GoldCard>
-      )}
 
-      {/* Friends */}
-      <Pressable onPress={onOpenFriends} style={{ backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: radius.card, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: GOLD_DIM }}>
-        <Text style={{ color: t.text, fontSize: 15, fontWeight: '700' }}>{friends} Friends</Text>
-        <Text style={{ color: GOLD_LIGHT, fontSize: 16 }}>{'>'}</Text>
-      </Pressable>
+        <Modal visible={editingName} transparent animationType="fade" onRequestClose={() => setEditingName(false)}>
+          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center' }}>
+            <GoldCard style={{ width: '86%', gap: 12 }}>
+              <Text style={{ color: '#fff', fontSize: 18, fontWeight: '600' }}>Change username</Text>
+              <TextInput
+                value={nameInput} onChangeText={setNameInput} autoCapitalize="none" autoCorrect={false}
+                placeholder="Username" placeholderTextColor="rgba(230,222,205,0.5)"
+                style={{ backgroundColor: 'rgba(255,255,255,0.06)', color: '#fff', borderRadius: 12, height: 48, paddingHorizontal: 14, fontSize: 16, borderWidth: 1, borderColor: GOLD_DIM }}
+              />
+              {!!nameMsg && <Text style={{ color: GOLD_LIGHT, fontSize: 13 }}>{nameMsg}</Text>}
+              <GoldButton label={savingName ? 'Saving...' : 'Save'} onPress={saveName} disabled={savingName || nameInput.trim().length < 3} />
+              <GhostGoldButton label="Cancel" onPress={() => setEditingName(false)} />
+            </GoldCard>
+          </View>
+        </Modal>
 
-      {/* Settings shortcut */}
-      <GoldButton label="Settings" onPress={onOpenSettings} />
-    </ScrollView>
+        {/* Ratings */}
+        <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>Ratings</Text>
+        <View style={{ flexDirection: 'row', gap: 12 }}>
+          <Stat label="Bullet" value={String(profile?.rating_bullet ?? 1200)} />
+          <Stat label="Blitz" value={String(profile?.rating_blitz ?? 1200)} />
+        </View>
+        <View style={{ flexDirection: 'row', gap: 12 }}>
+          <Stat label="Rapid" value={String(profile?.rating_rapid ?? 1200)} />
+          <Stat label="Puzzles solved" value={String(puzzlesSolved)} />
+        </View>
+
+        {/* Trend */}
+        <GoldCard>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+            <Text style={{ color: '#fff', fontSize: 14, fontWeight: '700' }}>Rating Trend (30 days)</Text>
+            <View style={{ flexDirection: 'row', gap: 6 }}>
+              {(['bullet', 'blitz', 'rapid'] as Fmt[]).map((f) => (
+                <Pressable key={f} onPress={() => setTrendFmt(f)}
+                  style={{ paddingHorizontal: 10, height: 26, borderRadius: 13, justifyContent: 'center', backgroundColor: trendFmt === f ? GOLD : 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: trendFmt === f ? GOLD : GOLD_DIM }}>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: trendFmt === f ? '#1a1408' : 'rgba(230,222,205,0.8)' }}>{FORMAT_LABEL[f]}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+          {trendFmt && trendData[trendFmt].length >= 2 ? (
+            <Sparkline values={trendData[trendFmt]} width={310} height={90} />
+          ) : (
+            <Text style={{ color: 'rgba(230,222,205,0.7)', fontSize: 13 }}>Play a few rated {trendFmt ? FORMAT_LABEL[trendFmt] : ''} games to see your trend here.</Text>
+          )}
+        </GoldCard>
+
+        {/* Win/Loss/Draw */}
+        <GoldCard>
+          <Text style={{ color: '#fff', fontSize: 14, fontWeight: '700', marginBottom: 2 }}>Win / Loss / Draw (last {games.length})</Text>
+          <View style={{ flexDirection: 'row', height: 14, borderRadius: 7, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.08)' }}>
+            <View style={{ flex: wins, backgroundColor: '#6ec878' }} />
+            <View style={{ flex: losses, backgroundColor: '#dc6464' }} />
+            <View style={{ flex: draws || 0.0001, backgroundColor: 'rgba(230,222,205,0.5)' }} />
+          </View>
+          <Text style={{ color: 'rgba(230,222,205,0.75)', fontSize: 12 }}>
+            {Math.round((wins / total) * 100)}% Wins · {Math.round((losses / total) * 100)}% Losses · {Math.round((draws / total) * 100)}% Draws
+          </Text>
+        </GoldCard>
+
+        {/* Recent matches */}
+        <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>Recent Matches</Text>
+        {games.length === 0 && <Text style={{ color: 'rgba(230,222,205,0.7)', fontSize: 13 }}>No finished online games yet.</Text>}
+        {games.slice(0, 8).map((g) => {
+          const mine = g.white === userId;
+          const oppId = mine ? g.black : g.white;
+          const won = (g.result === 'w' && mine) || (g.result === 'b' && !mine);
+          const drew = g.result === 'd';
+          const change = mine ? g.white_rating_change : g.black_rating_change;
+          return (
+            <GoldCard key={g.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 }}>
+              <View style={{ width: 26, height: 26, borderRadius: 13, borderWidth: 2, borderColor: drew ? 'rgba(230,222,205,0.6)' : won ? '#6ec878' : '#dc6464', alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ color: drew ? 'rgba(230,222,205,0.8)' : won ? '#6ec878' : '#dc6464', fontWeight: '700' }}>{drew ? '=' : won ? '✓' : '✗'}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: '#fff', fontSize: 14, fontWeight: '600' }}>{names[oppId] ?? 'Opponent'}</Text>
+                <Text style={{ color: 'rgba(230,222,205,0.6)', fontSize: 11 }}>{g.move_count} moves</Text>
+              </View>
+              {change != null && (
+                <Text style={{ color: change > 0 ? '#6ec878' : change < 0 ? '#dc6464' : 'rgba(230,222,205,0.7)', fontWeight: '700' }}>
+                  {change > 0 ? '+' : ''}{change}
+                </Text>
+              )}
+            </GoldCard>
+          );
+        })}
+
+        {/* Trophies */}
+        <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>Trophies & Badges</Text>
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          {streak >= 3 && (
+            <GoldCard style={{ flex: 1, alignItems: 'center' }}>
+              <Text style={{ fontSize: 22, color: GOLD_LIGHT }}>★</Text>
+              <Text style={{ color: 'rgba(230,222,205,0.75)', fontSize: 10, textAlign: 'center' }}>{streak}-Win{'\n'}Streak</Text>
+            </GoldCard>
+          )}
+          {knightMate && (
+            <GoldCard style={{ flex: 1, alignItems: 'center' }}>
+              <Text style={{ fontSize: 22, color: GOLD_LIGHT }}>★</Text>
+              <Text style={{ color: 'rgba(230,222,205,0.75)', fontSize: 10, textAlign: 'center' }}>Knight{'\n'}Mate</Text>
+            </GoldCard>
+          )}
+          {puzzlesSolved >= 10 && (
+            <GoldCard style={{ flex: 1, alignItems: 'center' }}>
+              <Text style={{ fontSize: 22, color: GOLD_LIGHT }}>★</Text>
+              <Text style={{ color: 'rgba(230,222,205,0.75)', fontSize: 10, textAlign: 'center' }}>Puzzle{'\n'}Solver</Text>
+            </GoldCard>
+          )}
+          {streak < 3 && !knightMate && puzzlesSolved < 10 && (
+            <Text style={{ color: 'rgba(230,222,205,0.7)', fontSize: 13 }}>Play games and solve puzzles to earn badges.</Text>
+          )}
+        </View>
+
+        {/* Favorite opening */}
+        {(opening.white || opening.black) && (
+          <GoldCard>
+            <Text style={{ color: 'rgba(230,222,205,0.75)', fontSize: 12 }}>Favorite Opening</Text>
+            {!!opening.white && <Text style={{ color: GOLD_LIGHT, fontSize: 13, fontWeight: '600' }}>White: {opening.white}</Text>}
+            {!!opening.black && <Text style={{ color: GOLD_LIGHT, fontSize: 13, fontWeight: '600' }}>Black: {opening.black}</Text>}
+          </GoldCard>
+        )}
+
+        {/* Friends */}
+        <Pressable onPress={onOpenFriends}>
+          <GoldCard style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>{friends} Friends</Text>
+            <Text style={{ color: 'rgba(230,222,205,0.7)', fontSize: 16 }}>{'>'}</Text>
+          </GoldCard>
+        </Pressable>
+
+        {/* Settings shortcut */}
+        <GhostGoldButton label="Settings" onPress={onOpenSettings} />
+      </ScrollView>
     </SafeAreaView>
   );
 }

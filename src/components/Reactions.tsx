@@ -1,13 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { radius, useTheme } from '../theme';
+import { radius } from '../theme';
+import { useGameSkin } from './GameChrome';
 import { supabase } from '../online/supabase';
 
 const EMOJI = ['👍', '😊', '😮', '😢', '🤝', '♟️'];
 
 // Ephemeral, in-game reactions: nothing is saved, so a fresh viewer never sees old ones.
 export default function Reactions({ gameId, mySide }: { gameId: string; mySide: 'w' | 'b' }) {
-  const t = useTheme();
+  const skin = useGameSkin();
   const [incoming, setIncoming] = useState<string | null>(null);
   const chanRef = useRef<any>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -29,13 +30,16 @@ export default function Reactions({ gameId, mySide }: { gameId: string; mySide: 
   return (
     <View style={{ width: '100%', gap: 8 }}>
       {incoming && (
-        <View style={{ alignSelf: 'flex-start', backgroundColor: t.surface, borderRadius: radius.card, paddingHorizontal: 14, paddingVertical: 8 }}>
+        <View style={{ alignSelf: 'flex-start', backgroundColor: skin.panelBg2, borderRadius: radius.card, paddingHorizontal: 14, paddingVertical: 8, borderWidth: skin.premium ? 1 : 0, borderColor: skin.border }}>
           <Text style={{ fontSize: 22 }}>{incoming}</Text>
         </View>
       )}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
         {EMOJI.map((e) => (
-          <Pressable key={e} onPress={() => send(e)} style={{ width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: t.surface }}>
+          <Pressable key={e} onPress={() => send(e)} style={{
+            width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center',
+            backgroundColor: skin.panelBg2, borderWidth: skin.premium ? 1 : 0, borderColor: skin.border,
+          }}>
             <Text style={{ fontSize: 20 }}>{e}</Text>
           </Pressable>
         ))}
